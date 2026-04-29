@@ -86,12 +86,12 @@ export function RegisterProject({ projectId, owner, managers }: RegisterProjectP
 
   return (
     <AndamioScrollArea className="h-full">
-      <div className="min-h-full bg-gradient-to-br from-background via-background to-secondary/5">
+      <div className="min-h-full bg-background">
         <div className="max-w-2xl mx-auto px-6 py-12">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/20 mx-auto mb-4">
-              <OnChainIcon className="h-8 w-8 text-secondary" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-secondary/10 mx-auto mb-4">
+              <OnChainIcon className="h-5 w-5 text-secondary" />
             </div>
             <AndamioHeading level={1} size="3xl" className="mb-2">
               Register Project
@@ -161,7 +161,7 @@ export function RegisterProject({ projectId, owner, managers }: RegisterProjectP
           <AndamioCard>
             <AndamioCardContent className="py-6 space-y-6">
               <div className="flex items-center gap-3 mb-2">
-                <ProjectIcon className="h-5 w-5 text-primary" />
+                <ProjectIcon className="h-5 w-5 text-secondary" />
                 <AndamioHeading level={2} size="lg">
                   Project Details
                 </AndamioHeading>

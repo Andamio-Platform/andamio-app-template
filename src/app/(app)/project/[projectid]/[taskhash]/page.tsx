@@ -392,7 +392,7 @@ export default function TaskDetailPage() {
             </div>
           ) : commitmentStatus === "REWARDED" ? (
             /* ── Reward claimed — per-commitment REWARDED status ── */
-            <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="rounded-sm border bg-muted/30 p-4">
               <div className="flex items-start gap-3">
                 <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <div>
@@ -407,7 +407,7 @@ export default function TaskDetailPage() {
             /* ── ACCEPTED (current) — Post-acceptance flow ────────── */
             <div className="space-y-4">
               {/* Acceptance banner */}
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <div className="rounded-sm border border-primary/30 bg-primary/5 p-4">
                 <div className="flex items-start gap-3">
                   <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
@@ -428,7 +428,7 @@ export default function TaskDetailPage() {
                     {/* Option A: Continue Contributing (only when tasks are available) */}
                     {availableTaskCount > 0 ? (
                       <Link href={`/project/${projectId}`} className="block">
-                        <div className="rounded-lg border p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full">
+                        <div className="rounded-sm border p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full">
                           <div className="flex items-center gap-2">
                             <ContributorIcon className="h-5 w-5 text-primary" />
                             <AndamioText className="font-medium">Continue Contributing</AndamioText>
@@ -439,7 +439,7 @@ export default function TaskDetailPage() {
                         </div>
                       </Link>
                     ) : (
-                      <div className="rounded-lg border border-muted p-4 space-y-3">
+                      <div className="rounded-sm border border-muted p-4 space-y-3">
                         <div className="flex items-center gap-2">
                           <AlertIcon className="h-5 w-5 text-muted-foreground" />
                           <AndamioText className="font-medium text-muted-foreground">No Tasks Available</AndamioText>
@@ -454,7 +454,7 @@ export default function TaskDetailPage() {
                     <button
                       type="button"
                       onClick={() => setShowClaimFlow(true)}
-                      className="rounded-lg border border-primary/20 p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full text-left"
+                      className="rounded-sm border border-primary/20 p-4 space-y-3 hover:border-primary/50 transition-colors cursor-pointer h-full text-left"
                     >
                       <div className="flex items-center gap-2">
                         <CredentialIcon className="h-5 w-5 text-primary" />
@@ -481,7 +481,7 @@ export default function TaskDetailPage() {
                       }}
                     />
                   ) : (
-                    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                    <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4">
                       <div className="flex items-start gap-3">
                         <AlertIcon className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                         <div>
@@ -519,16 +519,16 @@ export default function TaskDetailPage() {
               {activeCommitment?.pendingTxHash && (
                 <>
                   <AndamioSeparator />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <OnChainIcon className="h-4 w-4 text-muted-foreground" />
-                      <AndamioText variant="small" className="font-medium">Pending Transaction</AndamioText>
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <OnChainIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <AndamioText variant="small" className="font-medium truncate">Pending Transaction</AndamioText>
                     </div>
                     <a
                       href={getTransactionExplorerUrl(activeCommitment.pendingTxHash)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-xs text-primary hover:underline"
+                      className="font-mono text-xs text-primary hover:underline truncate shrink-0"
                     >
                       {activeCommitment.pendingTxHash.slice(0, 12)}...
                     </a>
@@ -577,7 +577,7 @@ export default function TaskDetailPage() {
                   {formatCommitmentStatus(commitmentStatus)}
                 </AndamioBadge>
               </div>
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+              <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3">
                 <div className="flex items-start gap-2">
                   <AlertIcon className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                   <AndamioText variant="small">
@@ -597,7 +597,7 @@ export default function TaskDetailPage() {
               </div>
 
               {commitmentStatus === "REFUSED" && (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3">
                   <div className="flex items-start gap-2">
                     <AlertIcon className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                     <AndamioText variant="small">
@@ -661,7 +661,7 @@ export default function TaskDetailPage() {
 
               {/* TaskAction TX component — hidden when evidence hasn't changed */}
               {evidenceUnchanged ? (
-                <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="rounded-sm border bg-muted/30 p-4">
                   <div className="flex items-start gap-3">
                     <SuccessIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                     <div>
@@ -702,16 +702,16 @@ export default function TaskDetailPage() {
               {/* Pending action TX hash */}
               {pendingActionTxHash && (
                 <div className="p-4 rounded-lg bg-muted/30 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <OnChainIcon className="h-4 w-4 text-muted-foreground" />
-                      <AndamioText variant="small" className="font-medium">Pending Transaction</AndamioText>
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <OnChainIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <AndamioText variant="small" className="font-medium truncate">Pending Transaction</AndamioText>
                     </div>
                     <a
                       href={getTransactionExplorerUrl(pendingActionTxHash)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-xs text-primary hover:underline"
+                      className="font-mono text-xs text-primary hover:underline truncate shrink-0"
                     >
                       {pendingActionTxHash.slice(0, 12)}...
                     </a>
@@ -864,7 +864,7 @@ export default function TaskDetailPage() {
             /* ── No commitment — Commit to This Task ────────── */
             <div className="text-center py-6">
               {isAssignedToCurrentUser && (
-                <div className="flex items-center justify-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 mb-4">
+                <div className="flex items-center justify-center gap-2 rounded-sm border border-primary/20 bg-primary/5 p-3 mb-4">
                   <SuccessIcon className="h-4 w-4 text-primary shrink-0" />
                   <AndamioText variant="small">
                     This task is assigned to you

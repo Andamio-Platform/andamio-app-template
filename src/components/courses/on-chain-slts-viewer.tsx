@@ -56,7 +56,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
 
   if (compact) {
     return (
-      <div className="rounded-lg border bg-muted/30 p-3">
+      <div className="rounded-sm border bg-muted/30 p-3">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
@@ -112,7 +112,7 @@ function OnChainModuleCard({ module, compact = false }: OnChainModuleCardProps) 
           {slts.map((slt, index) => (
             <div
               key={index}
-              className="flex items-start gap-3 p-3 rounded-lg border bg-background"
+              className="flex items-start gap-3 p-3 rounded-sm border bg-background"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
                 {index + 1}
@@ -265,7 +265,7 @@ export function OnChainSltsBadge({
   return (
     <AndamioTooltip>
       <AndamioTooltipTrigger asChild>
-        <AndamioBadge variant="outline" className="text-primary border-primary">
+        <AndamioBadge variant="outline" className="text-success border-success/30">
           <OnChainIcon className="h-3 w-3 mr-1" />
           {totalSlts} verified
         </AndamioBadge>

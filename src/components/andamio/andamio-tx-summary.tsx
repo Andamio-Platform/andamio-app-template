@@ -122,7 +122,7 @@ export function AndamioTxSummary({
   }
 
   return (
-    <div className={cn("bg-muted/50 rounded-xl border p-4 space-y-1", className)}>
+    <div className={cn("bg-muted/50 rounded-sm border p-4 space-y-1", className)}>
       <div className="flex items-center gap-2 mb-2 pb-2 border-b border-border/50">
         <InfoIcon className="h-4 w-4 text-primary" />
         <AndamioHeading level={4} size="base" className="text-sm font-bold uppercase tracking-wider text-primary">

@@ -23,6 +23,7 @@ import {
 } from "~/components/andamio";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { TransactionStatus } from "~/components/tx/transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import {
   AddIcon,
@@ -353,7 +354,7 @@ export function CreateCourseDialog({ defaultOpen = false }: CreateCourseDialogPr
               <TransactionStatus
                 state={state}
                 result={result}
-                error={error?.message ?? null}
+                error={parseTxErrorMessage(error?.message)}
                 onRetry={() => reset()}
                 messages={{
                   success: ui.successInfo,
@@ -363,7 +364,7 @@ export function CreateCourseDialog({ defaultOpen = false }: CreateCourseDialogPr
 
             {/* Waiting for Confirmation */}
             {isWaitingForConfirmation && (
-              <div className="rounded-lg border bg-muted/30 p-6 text-center">
+              <div className="rounded-sm border bg-muted/30 p-6 text-center">
                 <LoadingIcon className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
                 <AndamioText className="font-medium mb-1">
                   Confirming on blockchain...
@@ -385,7 +386,7 @@ export function CreateCourseDialog({ defaultOpen = false }: CreateCourseDialogPr
 
             {/* Learn More Links */}
             {!isWaitingForConfirmation && (
-              <div className="flex flex-col gap-2 rounded-lg border border-border/50 bg-muted/30 p-4">
+              <div className="flex flex-col gap-2 rounded-sm border border-border/50 bg-muted/30 p-4">
                 <AndamioText variant="small" className="font-medium text-foreground">
                   Want to learn more?
                 </AndamioText>

@@ -29,16 +29,19 @@ import { projectManagerKeys } from "~/hooks/api/project/use-project-manager";
 import { ownerProjectKeys } from "~/hooks/api/project/use-project-owner";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import { CoursePrereqsSelector, type CoursePrereq } from "./course-prereqs-selector";
 import {
   AndamioCard,
   AndamioCardContent,
-} from "~/components/andamio/andamio-card";
-import { AndamioInput } from "~/components/andamio/andamio-input";
-import { AndamioAlert, AndamioAlertDescription } from "~/components/andamio/andamio-alert";
-import { AndamioText } from "~/components/andamio/andamio-text";
-import { AndamioButton } from "~/components/andamio/andamio-button";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
+  AndamioTxSummary,
+  AndamioInput,
+  AndamioAlert,
+  AndamioAlertDescription,
+  AndamioText,
+  AndamioButton,
+  AndamioBadge,
+} from "~/components/andamio";
 import { AlertIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
@@ -107,6 +110,10 @@ export interface CreateProjectProps {
    * Parent can use this to hide Cancel button and update header.
    */
   onConfirmed?: () => void;
+  /** Pre-fill the project title (used when returning from course creation detour) */
+  initialTitle?: string;
+  /** Called when user needs to create a course; saves title and redirects to course creation */
+  onCreateCourseForProject?: (title: string) => void;
 }
 
 /**
@@ -119,14 +126,14 @@ export interface CreateProjectProps {
  * <CreateProject onSuccess={(policyId) => router.push(`/studio/project/${policyId}`)} />
  * ```
  */
-export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
+export function CreateProject({ onSuccess, onConfirmed, initialTitle, onCreateCourseForProject }: CreateProjectProps) {
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAndamioAuth();
   const { wallet, connected } = useWallet();
   const { state, result, error, execute, reset } = useTransaction();
 
   const [initiatorData, setInitiatorData] = useState<{ used_addresses: string[]; change_address: string } | null>(null);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle ?? "");
   const [coursePrereqs, setCoursePrereqs] = useState<CoursePrereq[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [titleTouched, setTitleTouched] = useState(false);
@@ -254,7 +261,7 @@ export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
       <AndamioCardContent className="py-8">
         {/* Post-Success Certificate View */}
         {txConfirmed ? (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-4">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-4 space-y-4">
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
@@ -398,6 +405,11 @@ export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
                     value={coursePrereqs}
                     onChange={setCoursePrereqs}
                     disabled={!isFormActive}
+                    onCreateCourse={
+                      onCreateCourseForProject
+                        ? () => onCreateCourseForProject(title)
+                        : undefined
+                    }
                   />
                 </ChecklistStep>
               </div>
@@ -408,7 +420,7 @@ export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
               <TransactionStatus
                 state={state}
                 result={result}
-                error={error?.message ?? null}
+                error={parseTxErrorMessage(error?.message)}
                 onRetry={() => reset()}
                 messages={{
                   success: "Transaction submitted! Waiting for confirmation...",
@@ -416,9 +428,25 @@ export function CreateProject({ onSuccess, onConfirmed }: CreateProjectProps) {
               />
             )}
 
+            {/* Pre-signing Summary */}
+            {state === "idle" && canCreate && (
+              <div className="animate-in-fade mb-6">
+                <AndamioTxSummary
+                  txType="INSTANCE_PROJECT_CREATE"
+                  params={{
+                    alias: user.accessTokenAlias!,
+                    managers: [user.accessTokenAlias!],
+                    course_prereqs: coursePrereqs,
+                    initiator_data: initiatorData,
+                  }}
+                  metadata={{ title }}
+                />
+              </div>
+            )}
+
             {/* Gateway Confirmation Status */}
             {state === "success" && result?.requiresDBUpdate && !txFailed && (
-              <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="rounded-sm border bg-muted/30 p-4">
                 <div className="flex items-center gap-3">
                   <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
                   <div className="flex-1">

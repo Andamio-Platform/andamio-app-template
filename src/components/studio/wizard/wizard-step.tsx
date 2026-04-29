@@ -107,7 +107,7 @@ export function WizardStepHighlight({
   return (
     <div
       className={cn(
-        "p-6 rounded-xl bg-primary/5 border border-primary/10",
+        "p-6 rounded-sm bg-primary/5 border border-primary/10",
         className
       )}
     >

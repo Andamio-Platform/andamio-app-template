@@ -1014,7 +1014,7 @@ export function EditorToolbar({
         style={{ maxWidth: '100%', width: '100%' }}
         className={cn(
           "flex items-center gap-0.5",
-          "rounded-lg border border-border/80 bg-muted/30 p-1.5",
+          "rounded-sm border border-border/80 bg-muted/30 p-1.5",
           "shadow-sm overflow-hidden",
           "box-border",
           className,

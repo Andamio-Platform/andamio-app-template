@@ -80,13 +80,13 @@ export function V1MigrateCard({ detectedAlias, onMinted, onBack }: V1MigrateCard
         </AndamioText>
 
         <AndamioCard className="mt-6 w-full">
-          <AndamioCardContent className="space-y-4 pt-6">
+          <AndamioCardContent className="space-y-4">
             {explorerUrl && (
               <a
                 href={explorerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+                className="flex items-center justify-center gap-2 rounded-sm border bg-muted/30 p-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
               >
                 View transaction on explorer
                 <ExternalLinkIcon className="h-4 w-4" />
@@ -94,7 +94,7 @@ export function V1MigrateCard({ detectedAlias, onMinted, onBack }: V1MigrateCard
             )}
 
             {streamSuccess && (
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-center">
+              <div className="rounded-sm border border-primary/30 bg-primary/5 p-3 text-center">
                 <AndamioText variant="small" className="font-medium text-foreground">
                   Transaction confirmed on-chain
                 </AndamioText>
@@ -135,7 +135,7 @@ export function V1MigrateCard({ detectedAlias, onMinted, onBack }: V1MigrateCard
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <AndamioText variant="small" className="text-muted-foreground">
               Alias
             </AndamioText>

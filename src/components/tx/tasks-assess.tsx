@@ -16,6 +16,7 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -188,7 +189,7 @@ export function TasksAssess({
         </div>
 
         {/* Assessment Outcomes Explanation */}
-        <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+        <div className="space-y-2 rounded-sm border bg-muted/30 p-3">
           <AndamioText variant="small" className="font-medium">Decision Options:</AndamioText>
           <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2">
@@ -219,7 +220,7 @@ export function TasksAssess({
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => {
               setAssessmentResult(null);
               reset();
@@ -232,7 +233,7 @@ export function TasksAssess({
 
         {/* Gateway Confirmation Status */}
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
@@ -252,7 +253,7 @@ export function TasksAssess({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">

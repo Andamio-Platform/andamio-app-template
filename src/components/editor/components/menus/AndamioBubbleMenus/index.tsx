@@ -57,7 +57,7 @@ export function AndamioBubbleMenus({
     return (
       <div
         className={cn(
-          "flex items-center gap-2 rounded-lg border border-border bg-popover p-2 shadow-lg",
+          "flex items-center gap-2 rounded-sm border border-border bg-popover p-2 shadow-lg",
           className,
         )}
       >
@@ -98,7 +98,7 @@ export function AndamioBubbleMenus({
   return (
     <div
       className={cn(
-        "flex items-center gap-1 rounded-lg border border-border bg-popover p-1 shadow-lg",
+        "flex items-center gap-1 rounded-sm border border-border bg-popover p-1 shadow-lg",
         className,
       )}
     >

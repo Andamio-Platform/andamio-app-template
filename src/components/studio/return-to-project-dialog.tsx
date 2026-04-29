@@ -79,7 +79,7 @@ export function ReturnToProjectDialog({
               </AndamioText>
 
               {/* Course visibility toggle */}
-              <div className="rounded-lg border p-3 space-y-2">
+              <div className="rounded-sm border p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <AndamioText className="text-sm font-medium">Course visibility</AndamioText>
                   <div className="flex items-center gap-2">

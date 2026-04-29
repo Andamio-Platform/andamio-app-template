@@ -13,10 +13,12 @@ import {
   AndamioNotFoundCard,
   AndamioCard,
   AndamioCardContent,
+  AndamioCardHeader,
+  AndamioCardAction,
+  AndamioCardIconHeader,
 } from "~/components/andamio";
 import { SettingsIcon, OnChainIcon, AssignmentIcon, NextIcon } from "~/components/icons";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { useCourse, useCourseModule, useSLTs } from "~/hooks/api";
 import { useTeacherCourses } from "~/hooks/api/course/use-course-teacher";
 import { useStudentAssignmentCommitments, getModuleCommitmentStatus } from "~/hooks/api/course/use-student-assignment-commitments";
@@ -188,11 +190,11 @@ export default function ModuleLessonsPage() {
 
       {/* Student Learning Targets & Lessons Combined */}
       <AndamioCard>
-        <AndamioCardContent className="pt-6 space-y-4">
+        <AndamioCardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <AndamioSectionHeader title="Student Learning Targets & Lessons" />
             {onChainModule && (
-              <AndamioBadge variant="outline" className="text-primary border-primary">
+              <AndamioBadge variant="outline" className="text-muted-foreground">
                 <OnChainIcon className="h-3 w-3 mr-1" />
                 On-chain
               </AndamioBadge>
@@ -266,34 +268,30 @@ function AssignmentCTA({
 
   return (
     <AndamioCard className="border-primary/50 bg-primary/5">
-      <AndamioCardContent className="pt-6">
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          <div className="flex-shrink-0">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <AssignmentIcon className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-          <div className="flex-1 text-center sm:text-left space-y-2">
-            <div className="flex items-center gap-2 justify-center sm:justify-start">
-              <AndamioHeading level={3} size="lg">{ctaConfig.heading}</AndamioHeading>
-              {commitmentStatus && (
-                <AssignmentStatusBadge status={commitmentStatus} />
-              )}
-            </div>
-            <AndamioText variant="muted">{ctaConfig.description}</AndamioText>
-          </div>
-          {ctaConfig.buttonLabel && (
-            <div className="flex-shrink-0">
-              <Link href={`/course/${courseId}/${moduleCode}/assignment`}>
-                <AndamioButton size="lg">
-                  {ctaConfig.buttonLabel}
-                  <NextIcon className="h-4 w-4 ml-2" />
-                </AndamioButton>
-              </Link>
-            </div>
-          )}
-        </div>
-      </AndamioCardContent>
+      <AndamioCardHeader>
+        <AndamioCardIconHeader
+          icon={AssignmentIcon}
+          title={ctaConfig.heading}
+          description={ctaConfig.description}
+          iconColor="text-primary"
+          titleAs="h3"
+          titleBadge={
+            commitmentStatus ? (
+              <AssignmentStatusBadge status={commitmentStatus} />
+            ) : undefined
+          }
+        />
+        {ctaConfig.buttonLabel && (
+          <AndamioCardAction className="self-center">
+            <Link href={`/course/${courseId}/${moduleCode}/assignment`}>
+              <AndamioButton size="lg">
+                {ctaConfig.buttonLabel}
+                <NextIcon className="h-4 w-4 ml-2" />
+              </AndamioButton>
+            </Link>
+          </AndamioCardAction>
+        )}
+      </AndamioCardHeader>
     </AndamioCard>
   );
 }
@@ -321,7 +319,7 @@ function getAssignmentCTAConfig(status: string | null) {
           "You've claimed your credential for this module. Your achievement is recorded on-chain.",
         buttonLabel: "View Assignment",
       };
-    case "ASSIGNMENT_REFUSED":
+    case "ASSIGNMENT_DENIED":
       return {
         heading: "Revision Requested",
         description:

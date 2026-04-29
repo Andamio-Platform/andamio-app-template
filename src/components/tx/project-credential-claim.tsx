@@ -176,7 +176,7 @@ export function ProjectCredentialClaim({
       <AndamioCardContent>
         {/* Pending Rewards — only when leaving with rewards */}
         {hasRewards && (
-          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <div className="flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/5 px-4 py-3">
             <TreasuryIcon className="h-4 w-4 shrink-0 text-primary" />
             <span className="text-sm font-medium">Pending Rewards:</span>
             <span className="text-sm font-bold text-primary">{formatLovelace(pendingRewardLovelace!)}</span>
@@ -198,7 +198,7 @@ export function ProjectCredentialClaim({
 
         {/* Gateway Confirmation Status */}
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
@@ -218,7 +218,7 @@ export function ProjectCredentialClaim({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">

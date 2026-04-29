@@ -90,7 +90,7 @@ export default function LessonDetailPage() {
 
         {!error && (
           <AndamioCard>
-            <AndamioCardContent className="pt-6">
+            <AndamioCardContent>
               <AndamioEmptyState
                 icon={CourseIcon}
                 title="This learning target doesn't have a lesson yet"
@@ -151,25 +151,20 @@ export default function LessonDetailPage() {
 
       {/* Lesson Content */}
       {!!lesson.contentJson && (
-        <AndamioCard>
-          <AndamioCardHeader>
-            <AndamioCardTitle>Lesson Content</AndamioCardTitle>
-          </AndamioCardHeader>
-          <AndamioCardContent>
-            <ContentViewer
-              content={lesson.contentJson}
-              emptyContent={
-                <AndamioText variant="muted" className="italic">Unable to parse lesson content</AndamioText>
-              }
-            />
-          </AndamioCardContent>
-        </AndamioCard>
+        <ContentViewer
+          content={lesson.contentJson}
+          emptyContent={
+            <AndamioText variant="muted" className="italic">
+              Unable to parse lesson content
+            </AndamioText>
+          }
+        />
       )}
 
       {/* Empty content state */}
       {!lesson.contentJson && !lesson.imageUrl && !lesson.videoUrl && (
         <AndamioCard>
-          <AndamioCardContent className="pt-6">
+          <AndamioCardContent>
             <AndamioEmptyState
               icon={CourseIcon}
               title="No content has been added to this lesson yet"

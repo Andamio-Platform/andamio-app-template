@@ -103,7 +103,7 @@ export function StudioOutlinePanel({
                 onClick={() => !step.isLocked && handleStepClick(step.id)}
                 disabled={step.isLocked}
                 className={cn(
-                  "group flex w-full items-center gap-3 px-3 py-3 text-left rounded-lg border transition-all duration-150",
+                  "group flex w-full items-center gap-3 px-3 py-3 text-left rounded-sm border transition-all duration-150",
                   isActive
                     ? "bg-primary/10 border-primary/30 shadow-sm"
                     : "bg-transparent border-transparent hover:bg-muted/50 hover:border-border active:bg-muted/70",

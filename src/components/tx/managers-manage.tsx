@@ -18,7 +18,7 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
-import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
   AndamioCard,
@@ -33,15 +33,7 @@ import { ManagerIcon, AlertIcon, LoadingIcon, SuccessIcon, CloseIcon, OnChainIco
 import { AliasListInput } from "./alias-list-input";
 import { toast } from "sonner";
 import { TX_COSTS } from "~/config/ui-constants";
-
-/** Parse alias-related TX errors into user-friendly messages */
-function parseAliasTxError(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  if (raw.includes("ACCESS_TOKEN_ERROR")) {
-    return "One or more aliases could not be found on-chain. Verify each alias has an active Andamio access token.";
-  }
-  return raw;
-}
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 
 export interface ManagersManageProps {
   projectNftPolicyId: string;
@@ -105,12 +97,15 @@ export function ManagersManage({
           setAliasesToRemove([]);
           // Trigger API refresh in background (will clear optimistic state when it catches up)
           void onSuccess?.();
-          reset();
+          // Defer reset to next tick so React batches all state updates together,
+          // preventing a brief flash of idle state before optimistic updates render
+          setTimeout(() => reset(), 0);
         } else if (status.state === "failed" || status.state === "expired") {
           toast.error("Update Failed", {
             description: status.last_error ?? "Please try again or contact support.",
           });
-          reset();
+          // Defer reset to next tick for consistent behavior
+          setTimeout(() => reset(), 0);
         }
       },
     }
@@ -340,7 +335,7 @@ export function ManagersManage({
           <TransactionStatus
             state={state}
             result={result}
-            error={parseAliasTxError(error?.message)}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => reset()}
             messages={{
               success: "Transaction submitted! Waiting for confirmation...",
@@ -350,7 +345,7 @@ export function ManagersManage({
 
         {/* Gateway Confirmation Status */}
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
@@ -382,7 +377,7 @@ export function ManagersManage({
 
         {/* Submit Button — idle state shows confirmation dialog */}
         {showAction && hasChanges && state === "idle" && (
-          <ConfirmDialog
+          <AndamioConfirmDialog
             trigger={
               <AndamioButton className="w-full sm:w-auto" disabled={!canSubmit}>
                 Save Team Changes

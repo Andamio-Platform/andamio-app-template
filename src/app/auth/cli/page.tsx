@@ -13,7 +13,7 @@ function CliAuthLoading() {
     <div className="flex min-h-screen items-center justify-center overflow-auto bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/50 bg-muted">
+          <div className="flex h-10 w-10 items-center justify-center rounded-sm border border-border/50 bg-muted">
             <TerminalIcon className="h-5 w-5 text-foreground" />
           </div>
           <div>

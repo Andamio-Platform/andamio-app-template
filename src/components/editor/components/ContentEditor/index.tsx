@@ -353,7 +353,7 @@ export function ContentEditor({
     return (
       <div className={cn("space-y-3", className)}>
         <div className="h-11 bg-muted/50 rounded-lg animate-pulse" />
-        <div className="rounded-xl border border-border bg-background p-6">
+        <div className="rounded-sm border border-border bg-background p-6">
           <div className="space-y-3 animate-pulse">
             <div className="h-4 bg-muted/50 rounded w-3/4" />
             <div className="h-4 bg-muted/50 rounded w-full" />
@@ -517,7 +517,7 @@ export function ContentEditor({
       {/* Editor content - elegant container */}
       <div
         className={cn(
-          "relative rounded-xl border bg-background transition-all duration-200",
+          "relative rounded-sm border bg-background transition-all duration-200",
           isFocused
             ? "border-primary/50 ring-4 ring-primary/10 shadow-sm"
             : "border-border hover:border-border/80",
@@ -536,7 +536,7 @@ export function ContentEditor({
 
         {/* Image upload loading overlay */}
         {isUploading && (
-          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center rounded-xl z-10">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center rounded-sm z-10">
             <div className="flex items-center gap-2 text-muted-foreground bg-background/90 px-4 py-2 rounded-lg shadow-lg border border-border">
               <LoadingIcon className="h-4 w-4 animate-spin" />
               <span className="text-sm font-medium">Uploading image...</span>

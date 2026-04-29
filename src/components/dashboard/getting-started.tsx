@@ -45,7 +45,7 @@ export function GettingStarted({ isAuthenticated, hasAccessToken }: GettingStart
   }
 
   return (
-    <AndamioCard className="border-muted-foreground/30 bg-gradient-to-r from-warning/5 to-transparent">
+    <AndamioCard className="border-muted-foreground/30 bg-warning/5">
       <AndamioCardContent className="py-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           {/* Progress indicator */}

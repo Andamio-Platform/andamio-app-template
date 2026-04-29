@@ -193,7 +193,7 @@ export function AssessAssignment({
 
         {/* Gateway Confirmation Status */}
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
@@ -213,7 +213,7 @@ export function AssessAssignment({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">

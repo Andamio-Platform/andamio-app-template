@@ -20,7 +20,7 @@ interface Particle {
 /**
  * Standardized celebration component for Andamio.
  * Provides high-impact visual feedback for "Moments of Commitment."
- *
+ * 
  * Features:
  * - Particle burst effect using Framer Motion
  * - Central achievement card with title and description
@@ -91,10 +91,10 @@ export function AndamioCelebration() {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 10 }}
             transition={{ type: "spring", damping: 15, stiffness: 200 }}
-            className="relative pointer-events-auto bg-card border shadow-2xl rounded-2xl p-8 max-w-sm w-full mx-4 flex flex-col items-center text-center gap-4"
+            className="relative pointer-events-auto bg-card border shadow-2xl rounded-sm p-8 max-w-sm w-full mx-4 flex flex-col items-center text-center gap-4"
           >
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 shadow-inner shadow-primary/5">
-              {active.icon ?? <CelebrateIcon className="h-10 w-10 text-primary animate-bounce" />}
+            <div className="flex h-14 w-14 items-center justify-center rounded-sm bg-primary/10">
+              {active.icon ?? <CelebrateIcon className="h-7 w-7 text-primary animate-bounce" />}
             </div>
 
             <div className="space-y-2">

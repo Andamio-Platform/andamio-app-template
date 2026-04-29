@@ -183,7 +183,7 @@ export function StepIntroduction({ config, direction }: StepIntroductionProps) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-muted/50 rounded-lg border border-dashed"
+          className="p-4 bg-muted/50 rounded-sm border border-dashed"
         >
           <AndamioText variant="small" className="text-xs font-medium mb-2">
             Not sure where to start? Here&apos;s a template:

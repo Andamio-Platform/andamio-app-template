@@ -95,7 +95,7 @@ export function PostMintAuthPrompt({ onAuthenticated }: PostMintAuthPromptProps)
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 px-4">
       {/* Step Progress Tracker */}
       <div className="w-full max-w-lg">
-        <AndamioCard className="border-muted-foreground/30 bg-gradient-to-r from-primary/5 to-transparent">
+        <AndamioCard className="border-muted-foreground/30 bg-primary/5">
           <AndamioCardContent className="py-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               {/* Progress indicator */}

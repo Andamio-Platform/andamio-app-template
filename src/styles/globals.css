@@ -9,9 +9,12 @@
    ========================================================================== */
 
 @theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif,
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: var(--font-geist-mono);
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, "Liberation Mono", monospace;
 
   --breakpoint-xs: 375px;
   --breakpoint-sm: 640px;
@@ -84,7 +87,7 @@
    ========================================================================== */
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
 
   /* Base */
   --background: oklch(1 0 0);
@@ -129,7 +132,7 @@
   --ring: oklch(0.669 0.199 38.581);
 
   /* Charts */
-  --chart-1: oklch(0.719 0.140 38.581);
+  --chart-1: oklch(0.719 0.14 38.581);
   --chart-2: oklch(0.387 0.134 250.505);
   --chart-3: oklch(0.627 0.106 181.764);
   --chart-4: oklch(0.669 0.199 38.581);
@@ -175,7 +178,7 @@
   --destructive: oklch(0.704 0.191 22.216);
   --success: oklch(0.62 0.16 160);
   --success-foreground: oklch(0.145 0 0);
-  --warning: oklch(0.80 0.15 70);
+  --warning: oklch(0.8 0.15 70);
   --warning-foreground: oklch(0.18 0.04 70);
   --info: oklch(0.65 0.14 250);
   --info-foreground: oklch(0.145 0 0);
@@ -184,9 +187,9 @@
   --border: oklch(0.338 0.024 257.128);
   --ring: oklch(0.719 0.174 38.581);
 
-  --chart-1: oklch(0.719 0.140 38.581);
+  --chart-1: oklch(0.719 0.14 38.581);
   --chart-2: oklch(0.605 0.155 250.505);
-  --chart-3: oklch(0.696 0.090 181.764);
+  --chart-3: oklch(0.696 0.09 181.764);
   --chart-4: oklch(0.719 0.174 38.581);
   --chart-5: oklch(0.605 0.155 250.505);
 
@@ -219,7 +222,9 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
   }
 
   /* Heading defaults — no !important, fully overridable */
@@ -340,48 +345,48 @@
 @layer components {
   .prose-content {
     & p {
-      @apply text-base leading-relaxed text-foreground/90;
+      @apply text-foreground/90 text-base leading-relaxed;
       @apply mb-4 last:mb-0;
       max-width: 70ch;
     }
 
     & ul {
-      @apply list-disc ml-6 mb-4 space-y-1.5;
+      @apply mb-4 ml-6 list-disc space-y-1.5;
     }
 
     & ol {
-      @apply list-decimal ml-6 mb-4 space-y-1.5;
+      @apply mb-4 ml-6 list-decimal space-y-1.5;
     }
 
     & li {
-      @apply leading-relaxed text-foreground/90;
+      @apply text-foreground/90 leading-relaxed;
     }
 
     & blockquote {
-      @apply border-l-2 border-primary/30 pl-4 italic my-6;
+      @apply border-primary/30 my-6 border-l-2 pl-4 italic;
       @apply text-muted-foreground;
     }
 
     & code {
-      @apply bg-muted px-1.5 py-0.5 text-sm font-mono rounded-md text-foreground/90;
+      @apply bg-muted text-foreground/90 rounded-md px-1.5 py-0.5 font-mono text-sm;
     }
 
     & pre {
-      @apply bg-muted p-4 overflow-x-auto my-6 rounded-lg text-sm border border-border;
+      @apply bg-muted border-border my-6 overflow-x-auto rounded-lg border p-4 text-sm;
     }
 
     & pre code {
-      @apply bg-transparent p-0 text-sm rounded-none;
+      @apply rounded-none bg-transparent p-0 text-sm;
     }
   }
 }
 
 /* ==========================================================================
-   Editor Content — Rendered Tiptap Output (legacy RenderEditor)
+   Editor Content — Rendered Tiptap Output
    ========================================================================== */
 
 .editor-content {
-  @apply prose prose-slate max-w-none dark:prose-invert;
+  @apply prose prose-slate dark:prose-invert max-w-none;
 
   @apply prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground;
   @apply prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-4 prose-h1:mt-0;
@@ -438,64 +443,64 @@
 /* Headings */
 
 .ProseMirror h1 {
-  @apply text-3xl font-bold tracking-tight text-foreground;
-  @apply mb-4 mt-8 first:mt-0;
+  @apply text-foreground text-3xl font-bold tracking-tight;
+  @apply mt-8 mb-4 first:mt-0;
 }
 
 .ProseMirror h2 {
-  @apply text-2xl font-semibold tracking-tight text-foreground;
-  @apply mb-3 mt-8 pb-2 border-b border-border/50;
+  @apply text-foreground text-2xl font-semibold tracking-tight;
+  @apply border-border/50 mt-8 mb-3 border-b pb-2;
 }
 
 .ProseMirror h3 {
-  @apply text-xl font-semibold tracking-tight text-foreground;
-  @apply mb-2 mt-6;
+  @apply text-foreground text-xl font-semibold tracking-tight;
+  @apply mt-6 mb-2;
 }
 
 .ProseMirror h4 {
-  @apply text-lg font-medium text-foreground;
-  @apply mb-2 mt-6;
+  @apply text-foreground text-lg font-medium;
+  @apply mt-6 mb-2;
 }
 
 .ProseMirror h5 {
-  @apply text-base font-medium text-foreground/90;
-  @apply mb-2 mt-4;
+  @apply text-foreground/90 text-base font-medium;
+  @apply mt-4 mb-2;
 }
 
 .ProseMirror h6 {
-  @apply text-sm font-medium uppercase tracking-wide text-muted-foreground;
-  @apply mb-2 mt-4;
+  @apply text-muted-foreground text-sm font-medium tracking-wide uppercase;
+  @apply mt-4 mb-2;
 }
 
 /* Body & Blocks */
 
 .ProseMirror p {
-  @apply text-base leading-relaxed text-foreground/90;
+  @apply text-foreground/90 text-base leading-relaxed;
   @apply mb-4;
 }
 
 .ProseMirror blockquote {
-  @apply border-l-4 border-primary/50 bg-muted/30;
-  @apply py-2 pl-4 pr-4 my-6;
+  @apply border-primary/50 bg-muted/30 border-l-4;
+  @apply my-6 py-2 pr-4 pl-4;
   @apply text-muted-foreground;
 }
 
 .ProseMirror hr {
-  @apply border-t-2 border-border my-8;
+  @apply border-border my-8 border-t-2;
 }
 
 /* Lists */
 
 .ProseMirror ul {
-  @apply list-disc list-outside ml-6 my-4 space-y-1.5;
+  @apply my-4 ml-6 list-outside list-disc space-y-1.5;
 }
 
 .ProseMirror ol {
-  @apply list-decimal list-outside ml-6 my-4 space-y-1.5;
+  @apply my-4 ml-6 list-outside list-decimal space-y-1.5;
 }
 
 .ProseMirror li {
-  @apply leading-relaxed pl-1;
+  @apply pl-1 leading-relaxed;
 }
 
 .ProseMirror li > p {
@@ -505,23 +510,23 @@
 /* Code */
 
 .ProseMirror code {
-  @apply bg-muted/70 text-foreground px-1.5 py-0.5 text-sm rounded-md;
-  @apply border border-border/30 font-mono;
+  @apply bg-muted/70 text-foreground rounded-md px-1.5 py-0.5 text-sm;
+  @apply border-border/30 border font-mono;
 }
 
 .ProseMirror pre {
-  @apply bg-muted text-foreground border border-border/50;
-  @apply p-4 my-6 rounded-lg shadow-sm overflow-x-auto;
+  @apply bg-muted text-foreground border-border/50 border;
+  @apply my-6 overflow-x-auto rounded-lg p-4 shadow-sm;
 }
 
 .ProseMirror pre code {
-  @apply bg-transparent border-0 p-0 text-sm;
+  @apply border-0 bg-transparent p-0 font-mono text-sm;
 }
 
 /* Tables */
 
 .ProseMirror table {
-  @apply w-full my-6 text-sm rounded-lg overflow-hidden shadow-md;
+  @apply my-6 w-full overflow-hidden rounded-lg text-sm shadow-md;
   border-collapse: separate;
   border-spacing: 0;
   border: 2px solid var(--border);
@@ -529,13 +534,13 @@
 
 .ProseMirror th {
   @apply px-4 py-3;
-  @apply bg-muted font-semibold text-left text-foreground;
+  @apply bg-muted text-foreground text-left font-semibold;
   border: 1px solid var(--border);
 }
 
 .ProseMirror td {
   @apply px-4 py-3;
-  @apply align-top text-left bg-background;
+  @apply bg-background text-left align-top;
   border: 1px solid var(--border);
 }
 
@@ -554,14 +559,14 @@
 /* Links */
 
 .ProseMirror a {
-  @apply text-primary no-underline font-medium;
-  @apply hover:underline transition-colors cursor-pointer;
+  @apply text-primary font-medium no-underline;
+  @apply cursor-pointer transition-colors hover:underline;
 }
 
 /* Images */
 
 .ProseMirror img {
-  @apply rounded-lg max-w-full h-auto shadow-md;
+  @apply h-auto max-w-full rounded-lg shadow-md;
 }
 
 /* Selection & Interaction */
@@ -571,11 +576,11 @@
 }
 
 .ProseMirror .column-resize-handle {
-  @apply absolute right-[-2px] top-0 bottom-0 w-1 bg-primary/50 pointer-events-none;
+  @apply bg-primary/50 pointer-events-none absolute top-0 right-[-2px] bottom-0 w-1;
 }
 
 .ProseMirror table .selectedCell::after {
-  @apply absolute inset-0 bg-primary/5 pointer-events-none;
+  @apply bg-primary/5 pointer-events-none absolute inset-0;
   content: "";
 }
 
@@ -583,19 +588,19 @@
 
 .ProseMirror s,
 .ProseMirror del {
-  @apply line-through text-muted-foreground;
+  @apply text-muted-foreground line-through;
 }
 
 .ProseMirror mark {
-  @apply bg-warning/30 text-foreground px-0.5 rounded-sm;
+  @apply bg-warning/30 text-foreground rounded-sm px-0.5;
 }
 
 .ProseMirror sub {
-  @apply text-xs align-sub;
+  @apply align-sub text-xs;
 }
 
 .ProseMirror sup {
-  @apply text-xs align-super;
+  @apply align-super text-xs;
 }
 
 /* Task lists */
@@ -622,13 +627,21 @@
 @layer components {
   /* Card — subtle shadow, content flow */
   [data-slot="card"] {
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    box-shadow:
+      0 1px 3px 0 rgb(0 0 0 / 0.04),
+      0 1px 2px -1px rgb(0 0 0 / 0.04);
   }
 
   [data-slot="card-content"] {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    [data-slot="card-content"] {
+      gap: 1rem;
+    }
   }
 
   [data-slot="card-content"] > .flex.flex-col.items-center {
@@ -641,7 +654,7 @@
   }
 
   [data-slot="card-description"] {
-    @apply text-sm text-muted-foreground;
+    @apply text-muted-foreground text-sm;
     margin-top: 0.25rem;
   }
 
@@ -661,7 +674,7 @@
   }
 
   [data-slot="table-head"] {
-    @apply px-4 py-3 font-medium text-xs uppercase tracking-wider text-muted-foreground bg-muted/50;
+    @apply text-muted-foreground bg-muted/50 px-4 py-3 text-xs font-medium tracking-wider uppercase;
     border-bottom-width: 1px;
     border-color: var(--border);
   }
@@ -679,7 +692,7 @@
 
 @layer utilities {
   .focus-ring {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    @apply ring-ring ring-offset-background ring-2 ring-offset-2 outline-none;
   }
 
   .hover-lift {
@@ -716,13 +729,23 @@
   }
 
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 

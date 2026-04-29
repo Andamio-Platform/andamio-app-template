@@ -24,7 +24,7 @@ export default function EditorLoading() {
       </div>
 
       {/* Editor card */}
-      <div className="rounded-xl border">
+      <div className="rounded-sm border">
         <div className="p-6 space-y-4">
           <div className="h-5 w-16 rounded motion-safe:animate-pulse bg-muted" />
           {/* Toolbar skeleton */}

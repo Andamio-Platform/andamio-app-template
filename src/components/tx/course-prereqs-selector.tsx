@@ -19,8 +19,7 @@ import {
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioHeading } from "~/components/andamio/andamio-heading";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Button } from "~/components/ui/button";
+import { AndamioCheckbox } from "~/components/andamio/andamio-checkbox";
 import {
   CourseIcon,
   ModuleIcon,
@@ -47,12 +46,15 @@ interface CoursePrereqsSelectorProps {
   onChange: (prereqs: CoursePrereq[]) => void;
   /** Whether the selector is disabled */
   disabled?: boolean;
+  /** Optional callback to intercept "Create a Course" button click */
+  onCreateCourse?: () => void;
 }
 
 export function CoursePrereqsSelector({
   value,
   onChange,
   disabled = false,
+  onCreateCourse,
 }: CoursePrereqsSelectorProps) {
   const { data: courses, isLoading: coursesLoading } =
     useTeacherCoursesWithModules();
@@ -260,7 +262,7 @@ export function CoursePrereqsSelector({
           })}
         </div>
       ) : privateCourses.length > 0 ? (
-        <div className="rounded-lg border border-warning/30 bg-warning/5 p-5 space-y-4">
+        <div className="rounded-sm border border-warning/30 bg-warning/5 p-5 space-y-4">
           <div className="flex items-start gap-3">
             <LockedIcon className="h-5 w-5 text-warning shrink-0 mt-0.5" />
             <div className="space-y-1">
@@ -282,7 +284,7 @@ export function CoursePrereqsSelector({
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-warning/30 bg-warning/5 p-5 space-y-4">
+        <div className="rounded-sm border border-warning/30 bg-warning/5 p-5 space-y-4">
           <div className="flex items-start gap-3">
             <AlertIcon className="h-5 w-5 text-warning shrink-0 mt-0.5" />
             <div className="space-y-1">
@@ -295,12 +297,19 @@ export function CoursePrereqsSelector({
             </div>
           </div>
 
-          <Link href="/studio?create=course">
-            <AndamioButton className="w-full">
+          {onCreateCourse ? (
+            <AndamioButton className="w-full" onClick={onCreateCourse}>
               <CourseIcon className="h-4 w-4 mr-2" />
               Create a Course
             </AndamioButton>
-          </Link>
+          ) : (
+            <Link href="/studio?create=course">
+              <AndamioButton className="w-full">
+                <CourseIcon className="h-4 w-4 mr-2" />
+                Create a Course
+              </AndamioButton>
+            </Link>
+          )}
         </div>
       )}
 
@@ -363,13 +372,13 @@ function CoursePrereqCard({
       : "";
 
   return (
-    <div className={`rounded-lg border ${borderClass}`}>
+    <div className={`rounded-sm border ${borderClass}`}>
       {/* Course Header — clickable to expand */}
       <div
         className="flex items-center gap-3 p-3 cursor-pointer"
         onClick={onToggleExpand}
       >
-        <Checkbox
+        <AndamioCheckbox
           checked={allSelected ? true : someSelected ? "indeterminate" : false}
           onCheckedChange={() => onToggleCourse()}
           disabled={disabled}
@@ -423,7 +432,7 @@ function CoursePrereqCard({
 
           {/* Select All / Clear buttons */}
           <div className="flex items-center gap-2 pt-1">
-            <Button
+            <AndamioButton
               variant="ghost"
               size="sm"
               onClick={onSelectAll}
@@ -431,8 +440,8 @@ function CoursePrereqCard({
               className="h-7 text-xs"
             >
               Select All
-            </Button>
-            <Button
+            </AndamioButton>
+            <AndamioButton
               variant="ghost"
               size="sm"
               onClick={onClear}
@@ -440,7 +449,7 @@ function CoursePrereqCard({
               className="h-7 text-xs"
             >
               Clear
-            </Button>
+            </AndamioButton>
           </div>
         </div>
       )}
@@ -470,11 +479,15 @@ function ModuleCheckboxRow({
   disabled = false,
 }: ModuleCheckboxRowProps) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors">
-      <Checkbox
+    <div
+      className="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors"
+      onClick={disabled ? undefined : onToggle}
+    >
+      <AndamioCheckbox
         checked={checked}
         onCheckedChange={onToggle}
         disabled={disabled}
+        onClick={(e) => e.stopPropagation()}
       />
       {moduleCode && (
         <AndamioBadge variant="outline" className="font-mono text-xs shrink-0">
@@ -489,6 +502,6 @@ function ModuleCheckboxRow({
         <SLTIcon className="h-3 w-3" />
         <span className="text-xs">{sltCount}</span>
       </div>
-    </label>
+    </div>
   );
 }

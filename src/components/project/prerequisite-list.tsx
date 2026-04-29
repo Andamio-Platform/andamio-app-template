@@ -46,8 +46,8 @@ export function PrerequisiteRow({
     >
       <CourseIcon className="h-4 w-4 mt-0.5 text-primary shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-medium group-hover:text-primary transition-colors">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="min-w-0 truncate text-sm font-medium group-hover:text-primary transition-colors">
             {isLoading ? (
               <span className="text-muted-foreground">Loading...</span>
             ) : courseData?.title ? (
@@ -56,7 +56,7 @@ export function PrerequisiteRow({
               <span className="font-mono text-muted-foreground">{prereq.courseId.slice(0, 12)}...</span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {hasCompletionData && requiredHashes.length > 0 && (
               <AndamioBadge
                 variant="outline"

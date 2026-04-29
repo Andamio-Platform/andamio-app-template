@@ -14,12 +14,11 @@ interface WelcomeHeroProps {
 
 export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
   return (
-    <AndamioCard className="overflow-hidden border-0 shadow-lg">
+    <AndamioCard className="overflow-hidden border-0">
       <AndamioCardContent className="p-0">
         {/* Main hero section */}
         <div className="relative">
-          {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent" />
+          <div className="absolute inset-0 bg-primary/5" />
 
           <div className="relative p-6 sm:p-8">
             <div className="flex flex-col gap-6">
@@ -38,7 +37,7 @@ export function WelcomeHero({ accessTokenAlias }: WelcomeHeroProps) {
                 </div>
 
                 {/* Access Token Badge - hidden on small screens */}
-                <div className="hidden sm:flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 shrink-0">
+                <div className="hidden sm:flex items-center gap-3 rounded-sm border border-primary/20 bg-primary/5 px-4 py-3 shrink-0">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
                     <AccessTokenIcon className="h-5 w-5 text-primary" />
                   </div>

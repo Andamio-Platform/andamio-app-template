@@ -150,7 +150,7 @@ export default function LearnerAssignmentPage() {
         description={undefined}
       />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <AndamioBadge variant="outline" className="font-mono text-xs">
           {moduleCode}
         </AndamioBadge>

@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
 import { useCopyFeedback } from "~/hooks/ui/use-success-notification";
-import { AndamioCard, AndamioCardContent, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";
+import { AndamioCard, AndamioCardContent } from "~/components/andamio/andamio-card";
+import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
 import { AndamioButton } from "~/components/andamio/andamio-button";
+import { AndamioText } from "~/components/andamio/andamio-text";
 import { WalletIcon, AccessTokenIcon, ShieldIcon, CopyIcon, CompletedIcon } from "~/components/icons";
 
 interface AccountDetailsProps {
@@ -28,20 +29,13 @@ export function AccountDetailsCard({
 
   return (
     <AndamioCard>
-      <AndamioCardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <WalletIcon className="h-5 w-5 text-muted-foreground" />
-          <AndamioCardTitle className="text-base">Account Details</AndamioCardTitle>
-        </div>
-      </AndamioCardHeader>
+      <AndamioCardIconHeader icon={WalletIcon} title="Account Details" />
       <AndamioCardContent className="space-y-4">
         {/* Wallet Address */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Wallet Address
-          </label>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs font-mono bg-muted rounded px-2 py-1.5 truncate">
+          <AndamioText variant="overline">Wallet Address</AndamioText>
+          <div className="flex items-center gap-2 min-w-0">
+            <code className="flex-1 min-w-0 text-xs font-mono bg-muted rounded px-2 py-1.5 truncate">
               {cardanoBech32Addr}
             </code>
             <AndamioButton
@@ -60,9 +54,7 @@ export function AccountDetailsCard({
 
         {/* Access Token */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Access Token
-          </label>
+          <AndamioText variant="overline">Access Token</AndamioText>
           {hasAccessToken ? (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-primary/10 rounded px-2 py-1.5">
@@ -82,9 +74,7 @@ export function AccountDetailsCard({
 
         {/* Session Status */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Session
-          </label>
+          <AndamioText variant="overline">Session</AndamioText>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldIcon className="h-3.5 w-3.5 text-primary" />

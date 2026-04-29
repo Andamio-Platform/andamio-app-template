@@ -27,7 +27,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
 import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
@@ -36,6 +36,7 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -55,6 +56,7 @@ import {
   InfoIcon,
   CelebrateIcon,
   ExternalLinkIcon,
+  ErrorIcon,
 } from "~/components/icons";
 import { storeJWT } from "~/lib/andamio-auth";
 import { toast } from "sonner";
@@ -131,6 +133,38 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
   const [confirmedAlias, setConfirmedAlias] = useState<string>("");
   const [confirmedTxHash, setConfirmedTxHash] = useState<string | null>(null);
 
+  // Alias availability check (debounced)
+  const [aliasAvailability, setAliasAvailability] = useState<
+    "idle" | "checking" | "available" | "taken" | "error"
+  >("idle");
+  const availabilityTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const checkAliasAvailability = React.useCallback((value: string) => {
+    if (availabilityTimerRef.current) clearTimeout(availabilityTimerRef.current);
+    const trimmed = value.trim();
+    if (!trimmed || !isValidAlias(trimmed)) {
+      setAliasAvailability("idle");
+      return;
+    }
+    setAliasAvailability("checking");
+    availabilityTimerRef.current = setTimeout(() => {
+      void (async () => {
+        try {
+          const res = await fetch(`/api/gateway/api/v2/user/exists/${encodeURIComponent(trimmed)}`);
+          if (!res.ok) { setAliasAvailability("error"); return; }
+          const data = (await res.json()) as { exists?: boolean };
+          setAliasAvailability(data.exists ? "taken" : "available");
+        } catch {
+          setAliasAvailability("error");
+        }
+      })();
+    }, 500);
+  }, []);
+
+  React.useEffect(() => {
+    return () => { if (availabilityTimerRef.current) clearTimeout(availabilityTimerRef.current); };
+  }, []);
+
   // Check for pending alias from registration flow (stored in localStorage)
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -198,13 +232,18 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
             // CRITICAL: Force re-authentication before allowing dashboard access
             // The old JWT doesn't have accessTokenAlias, so any operations
             // (course_create, project_create) would use the wrong owner alias.
-            // By logging out immediately, we ensure the user must re-authenticate
-            // to get a new JWT that includes their accessTokenAlias.
+            // We show celebration first, then auto-transition to reconnect flow.
             // See: https://github.com/Andamio-Platform/andamio-app-v2/issues/286
-            console.log("[MintAccessToken] Forcing re-auth to get JWT with accessTokenAlias");
-            logout();
-            // Transition to celebration state (user will see celebration, then must reconnect)
+            console.log("[MintAccessToken] TX confirmed - showing celebration");
             setCeremonyState("celebration");
+
+            // Auto-transition to reconnect flow after 2 seconds
+            // This gives users a moment to celebrate before we clear the session
+            setTimeout(() => {
+              console.log("[MintAccessToken] Auto-transitioning to reconnect flow");
+              logout("access_token_mint"); // Clears JWT AND disconnects wallet
+              setCeremonyState("reconnecting");
+            }, 2000);
           }
         } else if (status.state === "failed" || status.state === "expired") {
           toast.error("Transaction Processing Failed", {
@@ -235,9 +274,16 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
       } else {
         // Transition to celebration state
         setCeremonyState("celebration");
+
+        // Auto-transition to reconnect flow after 2 seconds
+        setTimeout(() => {
+          console.log("[MintAccessToken] Auto-transitioning to reconnect flow (pure on-chain)");
+          logout("access_token_mint");
+          setCeremonyState("reconnecting");
+        }, 2000);
       }
     }
-  }, [isPureOnChainSuccess, refreshAuth, onSuccess, skipCeremony]);
+  }, [isPureOnChainSuccess, refreshAuth, onSuccess, skipCeremony, logout]);
 
   // Reset the ref when state goes back to idle (for subsequent mints)
   useEffect(() => {
@@ -275,12 +321,6 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
     }
   }, [ceremonyState, onSuccess, router]);
 
-  // Handle the "Sign In" button click - clears session and triggers re-auth
-  const handleStartReauth = useCallback(() => {
-    setCeremonyState("reconnecting");
-    logout();
-  }, [logout]);
-
   // Get explorer URL for the transaction
   const explorerUrl = confirmedTxHash
     ? getTransactionExplorerUrl(confirmedTxHash, env.NEXT_PUBLIC_CARDANO_NETWORK)
@@ -296,7 +336,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
 
   const handleMint = async () => {
     if (!walletAddress || !alias.trim()) {
-      console.log("[MintAccessToken] Cannot mint - walletAddress:", walletAddress, "alias:", alias.trim());
+      // Early return - wallet or alias not ready
       return;
     }
 
@@ -401,15 +441,15 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
             <AccessTokenIcon className="h-8 w-8 text-primary" />
           </div>
           <AndamioCardTitle className="text-xl">
-            Sign In as {confirmedAlias}
+            Almost Done!
           </AndamioCardTitle>
           <AndamioCardDescription className="mx-auto max-w-sm text-center">
-            Connect your wallet to authenticate with your new access token.
+            Connect your wallet to activate your access token.
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-4">
           {authError && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-3">
               <AndamioText variant="small" className="text-destructive">
                 {authError}
               </AndamioText>
@@ -419,7 +459,8 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
           <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
             <InfoIcon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <AndamioText variant="small" className="text-muted-foreground">
-              Once connected, you&apos;ll be signed in automatically with your new on-chain identity.
+              This creates a fresh session with your new on-chain identity as{" "}
+              <span className="font-mono font-semibold">{confirmedAlias}</span>.
             </AndamioText>
           </div>
         </AndamioCardContent>
@@ -453,30 +494,17 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
           </AndamioCardDescription>
         </AndamioCardHeader>
         <AndamioCardContent className="space-y-5">
-          {/* The ceremony message */}
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 text-center space-y-2">
+          {/* The ceremony message with auto-progress indicator */}
+          <div className="rounded-sm border border-primary/20 bg-primary/5 p-5 text-center space-y-3">
             <AndamioText className="font-semibold text-lg">
               Welcome to Andamio!
             </AndamioText>
-            <AndamioText variant="muted">
-              Now you can authenticate to Andamio
-              <br />
-              with your Access Token.
-            </AndamioText>
-          </div>
-
-          {/* Sign In button */}
-          <AndamioButton onClick={handleStartReauth} size="lg" className="w-full">
-            <AccessTokenIcon className="h-5 w-5" />
-            Sign In with Your Access Token
-          </AndamioButton>
-
-          {/* Explanation */}
-          <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
-            <InfoIcon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-            <AndamioText variant="small" className="text-muted-foreground">
-              This will reconnect your wallet and sign in with your new on-chain identity.
-            </AndamioText>
+            <div className="flex items-center justify-center gap-2">
+              <LoadingIcon className="h-4 w-4 animate-spin text-primary" />
+              <AndamioText variant="muted">
+                Preparing your session...
+              </AndamioText>
+            </div>
           </div>
 
           {/* Explorer link */}
@@ -521,7 +549,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
       </AndamioCardHeader>
       <AndamioCardContent className="space-y-4">
         {/* What You're Getting */}
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+        <div className="rounded-sm border bg-muted/30 p-4 space-y-2">
           <div className="flex items-center gap-2">
             <ShieldIcon className="h-4 w-4 text-primary" />
             <AndamioText className="font-medium">On-Chain Identity</AndamioText>
@@ -539,14 +567,35 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
             type="text"
             placeholder="my_unique_alias"
             value={alias}
-            onChange={(e) => setAlias(e.target.value)}
+            onChange={(e) => { setAlias(e.target.value); checkAliasAvailability(e.target.value); }}
             disabled={state !== "idle" && state !== "error"}
-            className={`font-mono ${aliasError ? "border-destructive" : ""}`}
+            className={`font-mono ${aliasError || aliasAvailability === "taken" ? "border-destructive" : aliasAvailability === "available" ? "border-primary" : ""}`}
           />
           {aliasError ? (
             <AndamioText variant="small" className="text-xs text-destructive">
               {aliasError}
             </AndamioText>
+          ) : aliasAvailability === "taken" ? (
+            <div className="flex items-center gap-1.5">
+              <ErrorIcon className="h-3.5 w-3.5 shrink-0 text-destructive" />
+              <AndamioText variant="small" className="text-xs text-destructive">
+                This alias is already taken. Choose a different one.
+              </AndamioText>
+            </div>
+          ) : aliasAvailability === "available" ? (
+            <div className="flex items-center gap-1.5">
+              <SuccessIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <AndamioText variant="small" className="text-xs text-primary">
+                Available!
+              </AndamioText>
+            </div>
+          ) : aliasAvailability === "checking" ? (
+            <div className="flex items-center gap-1.5">
+              <LoadingIcon className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+              <AndamioText variant="small" className="text-xs">
+                Checking availability...
+              </AndamioText>
+            </div>
           ) : (
             <AndamioText variant="small" className="text-xs">
               Letters, numbers, and underscores only. This will be your unique identifier.
@@ -559,7 +608,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => reset()}
             messages={{
               success: (result?.requiresDBUpdate || result?.requiresOnChainConfirmation)
@@ -571,7 +620,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
 
         {/* Gateway Confirmation Status */}
         {state === "success" && (result?.requiresDBUpdate || result?.requiresOnChainConfirmation) && !txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
@@ -591,7 +640,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
 
         {/* TX Failed */}
         {txFailed && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4">
             <div className="flex items-center gap-3">
               <div className="flex-1">
                 <AndamioText className="font-medium text-destructive">
@@ -610,7 +659,7 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
           <TransactionButton
             txState={state}
             onClick={handleMint}
-            disabled={!walletAddress || !alias.trim() || !!aliasError || state === "error"}
+            disabled={!walletAddress || !alias.trim() || !!aliasError || aliasAvailability === "taken" || aliasAvailability === "checking" || state === "error"}
             stateText={{
               idle: !walletAddress ? "Loading wallet..." : ui.buttonText,
               fetching: "Preparing Transaction...",

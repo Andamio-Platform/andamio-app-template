@@ -77,6 +77,11 @@ import { PROXY_BASE } from "~/lib/gateway";
 import { txWatcherStore } from "~/stores/tx-watcher-store";
 import { pendingTxRegistrations } from "~/lib/pending-tx-registrations";
 import { parseTxErrorMessage } from "~/lib/tx-error-messages";
+import type { TxRecoveryContext } from "~/types/tx-recovery";
+import { buildWatcherToastConfig } from "~/lib/tx-watcher-toast-config";
+import { validateRecoveryContext } from "~/hooks/tx/validate-recovery-context";
+
+export { validateRecoveryContext };
 
 /** Spinner icon for dismissible loading toasts (toast.loading doesn't support closeButton) */
 const loadingSpinner = React.createElement(LoadingIcon, { className: "size-4 animate-spin" });
@@ -137,6 +142,14 @@ export interface SimpleTransactionConfig<T extends TransactionType> {
   skipValidation?: boolean;
   /** Optional metadata for TX registration (e.g., course title for instance creation) */
   metadata?: Record<string, string>;
+  /**
+   * Optional typed entity context used by the indexer-fallback path when polling
+   * times out. Supply for TX types whose commitment state is queryable via a GET
+   * endpoint (currently: PROJECT_CONTRIBUTOR_TASK_COMMIT, COURSE_STUDENT_ASSIGNMENT_COMMIT).
+   * The `kind` must match the `txType` — mismatches are logged and the context is dropped.
+   * @see src/types/tx-recovery.ts
+   */
+  recoveryContext?: TxRecoveryContext;
 }
 
 interface UnsignedTxResponse {
@@ -164,6 +177,10 @@ export function useTransaction() {
     async <T extends TransactionType>(config: SimpleTransactionConfig<T>) => {
       const { txType, params, onSuccess, onError, skipValidation, metadata } = config;
       const ui = getTransactionUI(txType);
+
+      // Validate recoveryContext.kind matches the TX type. Mismatches are a
+      // caller bug; drop the context rather than misrouting the indexer fallback.
+      const recoveryContext = validateRecoveryContext(txType, config.recoveryContext);
 
       // Reset state
       setError(null);
@@ -249,27 +266,43 @@ export function useTransaction() {
         // JWT is optional — gateway only requires X-API-Key (added by proxy).
         // This allows access token mint to be registered before the user has a JWT.
         const shouldRegister = ui.requiresDBUpdate || ui.requiresOnChainConfirmation;
+        let registrationSucceeded = false;
         if (shouldRegister) {
           const gatewayTxType = getGatewayTxType(txType);
           try {
             await registerTransaction(txHash, gatewayTxType, jwt, metadata);
+            registrationSucceeded = true;
             console.log(`[${txType}] Transaction registered with gateway`);
           } catch (regError) {
-            // Registration failed after retries — persist for recovery on next load
+            // Registration failed after retries — persist for recovery on next load.
+            // Diagnostic details are already logged inside registerTransaction (see issue #494).
             console.warn(`[${txType}] Failed to register TX after retries:`, regError);
-            pendingTxRegistrations.add({ txHash, txType: gatewayTxType, metadata });
+            pendingTxRegistrations.add({
+              txHash,
+              gatewayTxType,
+              frontendTxType: txType,
+              metadata,
+              recoveryContext,
+            });
+            // Persistent "tracking failed" toast. User action: reload to trigger on-load recovery.
+            // Do NOT auto-dismiss — the pending-tx indicator must stay until the user sees it.
             toast("Transaction submitted but tracking failed", {
-              description: "Your transaction is on the blockchain. Registration will retry automatically.",
+              id: txHash,
+              duration: Infinity,
+              description:
+                "Your transaction is on the blockchain. Reload this page to retry tracking — the gateway will pick it up then.",
             });
           }
 
           // Step 5b: Register with global TX watcher store for persistent monitoring.
-          // The store opens an SSE connection that survives page navigation.
-          txWatcherStore.getState().register(txHash, txType, {
-            successTitle: ui.successInfo,
-            successDescription: "Transaction confirmed and database updated.",
-            errorTitle: "Transaction Failed",
-          });
+          // Only start the watcher when registration succeeded — otherwise the store
+          // would poll a txHash the gateway has no record of, producing an indefinite
+          // 404 loop (issue #494).
+          if (registrationSucceeded) {
+            txWatcherStore
+              .getState()
+              .register(txHash, txType, buildWatcherToastConfig(txType), recoveryContext);
+          }
         } else {
           console.log(`[${txType}] Pure on-chain TX - skipping registration`);
         }
@@ -291,7 +324,11 @@ export function useTransaction() {
         // replace this with success/error when the terminal state is reached.
         // Uses toast() with a custom icon instead of toast.loading() because
         // Sonner loading toasts don't support the close button (known issue).
-        if (shouldRegister) {
+        //
+        // Gate on registrationSucceeded: if registration failed, the "tracking failed"
+        // toast is already showing with the same txHash id — don't replace it with a
+        // misleading "waiting for confirmation" spinner for a TX the client isn't watching.
+        if (shouldRegister && registrationSucceeded) {
           toast(ui.successInfo, {
             id: txHash,
             icon: loadingSpinner,
@@ -300,7 +337,7 @@ export function useTransaction() {
               ? "Transaction submitted. Waiting for confirmation..."
               : "Transaction submitted to blockchain!",
           });
-        } else {
+        } else if (!shouldRegister) {
           toast.success(ui.successInfo, {
             description: "Transaction submitted to blockchain!",
             action: explorerUrl

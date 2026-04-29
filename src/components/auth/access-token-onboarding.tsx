@@ -9,7 +9,7 @@ import {
   V2_ACCESS_TOKEN_POLICY_ID,
   extractAliasFromUnit,
 } from "~/lib/access-token-utils";
-import { withTimeout } from "~/lib/andamio-auth";
+import { withTimeout } from "~/lib/promise-utils";
 
 /** Budget for each wallet balance scan. Matches existing wallet-query timeouts. */
 const WALLET_SCAN_TIMEOUT_MS = 15_000;

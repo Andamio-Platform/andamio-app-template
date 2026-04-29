@@ -24,6 +24,8 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { txWatcherStore } from "~/stores/tx-watcher-store";
 import { registerTransaction } from "~/hooks/tx/use-tx-watcher";
 import { pendingTxRegistrations } from "~/lib/pending-tx-registrations";
+import { buildWatcherToastConfig } from "~/lib/tx-watcher-toast-config";
+import { runPendingTxRecovery } from "~/components/providers/recover-pending-transactions";
 
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const RECOVERY_DELAY_MS = 3_000; // Wait for app to settle before recovery
@@ -66,28 +68,23 @@ export function TxWatcherBridge({ children }: { children: ReactNode }) {
       if (aborted) return;
 
       pendingTxRegistrations.pruneExpired();
-      const pending = pendingTxRegistrations.getAll();
-      if (pending.length === 0) return;
 
-      console.log(`[tx-recovery] Found ${pending.length} pending registration(s), attempting recovery`);
-
-      // Recover each independently — don't let one failure block others
-      for (const entry of pending) {
-        void (async () => {
-          if (aborted) return;
-          try {
-            await registerTransaction(entry.txHash, entry.txType, jwt, entry.metadata);
-            pendingTxRegistrations.remove(entry.txHash);
-            toast.success("Recovered pending transaction", {
-              description: `Transaction ${entry.txHash.slice(0, 8)}... has been registered.`,
-            });
-            console.log(`[tx-recovery] Recovered ${entry.txHash}`);
-          } catch (error) {
-            console.warn(`[tx-recovery] Failed to recover ${entry.txHash}:`, error);
-            // Leave in localStorage for next load — don't toast to avoid spam
-          }
-        })();
-      }
+      void runPendingTxRecovery({
+        jwt,
+        registerFn: registerTransaction,
+        watcherRegister: txWatcherStore.getState().register,
+        getPending: pendingTxRegistrations.getAll,
+        removePending: pendingTxRegistrations.remove,
+        buildToastConfigFn: buildWatcherToastConfig,
+        toast,
+        isAborted: () => aborted,
+        // Reset the session guard so a subsequent mount (e.g., page refresh
+        // within the same JWT session) can retry the failed entry instead
+        // of waiting for logout or the 2h TTL.
+        onEntryFailed: () => {
+          recoveryRanRef.current = false;
+        },
+      });
     }, RECOVERY_DELAY_MS);
 
     return () => {

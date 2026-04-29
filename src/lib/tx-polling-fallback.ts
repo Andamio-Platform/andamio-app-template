@@ -55,6 +55,25 @@ const STALLED_THRESHOLD = 5;
  */
 const MAX_CONSECUTIVE_ERRORS = 10;
 
+/**
+ * Max consecutive 404 responses before treating the TX as permanently untracked
+ * by the gateway (pendingTx cache missing entirely). At 6s intervals, 5 polls
+ * ≈ 30s — longer than the normal post-register cache-visibility lag but short
+ * enough to avoid dead-ending the user for minutes on a gateway the TX hash
+ * was never registered with. See issue #494.
+ */
+const MAX_CONSECUTIVE_404S = 5;
+
+/**
+ * Internal sentinel for the 404-budget terminal so the watcher store can
+ * distinguish it from other synthetic terminals and route to the indexer
+ * fallback before firing handleTerminal.
+ *
+ * The consumer strips this field before rendering; it must never reach the UI.
+ * @internal
+ */
+export const BUDGET_404_REASON = "budget_404" as const;
+
 export async function pollUntilTerminal(
   txHash: string,
   authenticatedFetch: (url: string, init?: RequestInit) => Promise<Response>,
@@ -65,6 +84,7 @@ export async function pollUntilTerminal(
   const { interval = 6_000, maxPolls = 150 } = options;
   let stalledCount = 0;
   let consecutiveErrors = 0;
+  let consecutive404s = 0;
 
   for (let i = 0; i < maxPolls; i++) {
     if (signal?.aborted) return null;
@@ -99,13 +119,37 @@ export async function pollUntilTerminal(
           // TX not registered yet - expected briefly after submit.
           // Gateway is reachable though, so reset the error counter.
           consecutiveErrors = 0;
+          consecutive404s++;
+
+          // Budget exceeded: the pendingTx cache almost certainly doesn't have
+          // this txHash (issue #494). Return a synthetic terminal with an
+          // internal discriminator so the store can route to the indexer
+          // fallback before firing handleTerminal.
+          if (consecutive404s >= MAX_CONSECUTIVE_404S) {
+            console.warn(
+              `[TxPolling] TX ${txHash} returned 404 on ${consecutive404s} consecutive polls — treating as untracked`
+            );
+            const budgetStatus: TxStatus = {
+              tx_hash: txHash,
+              tx_type: "",
+              state: "failed",
+              retry_count: 0,
+              last_error:
+                "We can't find this transaction in the gateway. It may have submitted successfully to the blockchain — reload this page to check.",
+              __reason: "budget_404",
+            };
+            callbacks.onComplete?.(budgetStatus);
+            return budgetStatus;
+          }
+
           continue;
         }
         throw new Error(`Failed to get TX status: ${response.status}`);
       }
 
-      // Successful response — reset error counter
+      // Successful response — reset error counters
       consecutiveErrors = 0;
+      consecutive404s = 0;
 
       const status = (await response.json()) as TxStatus;
       callbacks.onStatus?.(status);

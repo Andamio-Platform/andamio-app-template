@@ -38,8 +38,11 @@ import type {
   TxStateChangeEvent,
   TxCompleteEvent,
 } from "~/types/tx-stream";
+import type { TxRecoveryContext } from "~/types/tx-recovery";
 import { parseSSEChunk } from "~/lib/sse-parser";
-import { pollUntilTerminal } from "~/lib/tx-polling-fallback";
+import { readSSEUntilIdle } from "~/lib/sse-idle-reader";
+import { pollUntilTerminal, BUDGET_404_REASON } from "~/lib/tx-polling-fallback";
+import { runIndexerFallback } from "~/lib/tx-indexer-fallback";
 import { useCelebrationStore } from "./celebration-store";
 
 // =============================================================================
@@ -72,6 +75,22 @@ const CLEANUP_DELAY_MS = 60_000;
  */
 const CONFIRMED_TIMEOUT_MS = 30_000;
 
+/**
+ * Maximum interval between SSE chunks before we treat the connection as
+ * silently stalled and hand off to the polling fallback. Without this, the
+ * gateway can accept the SSE connection and then never send a byte (most
+ * likely on the on-load recovery path when the gateway's `pendingTx` cache
+ * entry has expired) — the read loop would block in `await reader.read()`
+ * forever, defeating the 404 budget (PR #500) and indexer fallback (PR #500
+ * Unit 4) that exist to defend exactly this case.
+ *
+ * Reset on every received chunk including SSE comments / heartbeats.
+ *
+ * @see https://github.com/Andamio-Platform/andamio-app-v2/issues/505
+ * @see PR #500 / issue #494
+ */
+const SSE_IDLE_TIMEOUT_MS = 20_000;
+
 /** Maximum age before a transaction entry is considered stale */
 const MAX_AGE_MS = 60 * 60 * 1000; // 1 hour (Cardano TTL max)
 
@@ -98,6 +117,13 @@ export interface WatchedTransaction {
   /** Number of mounted useTxStream hooks watching this TX */
   subscriberCount: number;
   toastConfig: TxToastConfig;
+  /**
+   * Optional entity context used by the indexer-fallback path when polling
+   * terminates on the 404 budget. Only supplied for TX types whose commitment
+   * state is queryable via a GET endpoint.
+   * @see src/lib/tx-indexer-fallback.ts
+   */
+  recoveryContext?: TxRecoveryContext;
   registeredAt: number;
   /** @internal AbortController for the SSE/polling connection */
   _abortController: AbortController | null;
@@ -112,7 +138,12 @@ interface TxWatcherState {
 
 interface TxWatcherActions {
   /** Register a new transaction for global watching. Idempotent. */
-  register: (txHash: string, txType: string, toastConfig: TxToastConfig) => void;
+  register: (
+    txHash: string,
+    txType: string,
+    toastConfig: TxToastConfig,
+    recoveryContext?: TxRecoveryContext
+  ) => void;
   /** Remove a transaction from the watch list */
   unregister: (txHash: string) => void;
   /** Update the JWT used for authenticated requests */
@@ -203,12 +234,32 @@ function handleTerminal(
   const entry = transactions.get(txHash);
   if (!entry) return;
 
+  // Idempotency guard: if a terminal was already processed (e.g., SSE `complete`
+  // fired just before the polling-fallback terminal, or the indexer fallback
+  // resolved after the 404-budget terminal was already forwarded), silently
+  // drop the second call. Without this, duplicate terminal toasts fire and the
+  // celebration store re-triggers. Warn in dev so unexpected re-entry surfaces.
+  if (entry.isTerminal) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `[TxWatcherStore] handleTerminal called twice for ${txHash} — suppressing duplicate`
+      );
+    }
+    return;
+  }
+
+  // Strip any internal discriminator (e.g., __reason from the polling fallback)
+  // before persisting or rendering. The discriminator must never reach the UI
+  // or storage (see tx-polling-fallback.ts BUDGET_404_REASON).
+  const sanitizedStatus: TxStatus = { ...finalStatus };
+  delete sanitizedStatus.__reason;
+
   // Clear confirmed-state timeout
   if (entry._confirmedTimeout) clearTimeout(entry._confirmedTimeout);
 
   // Mark as terminal and clear connection/timer refs
   updateTxEntry(get, set, txHash, {
-    status: finalStatus,
+    status: sanitizedStatus,
     isTerminal: true,
     _abortController: null,
     _confirmedTimeout: null,
@@ -315,120 +366,139 @@ function startWatching(
       const decoder = new TextDecoder();
       let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      const result = await readSSEUntilIdle({
+        reader,
+        decoder,
+        idleTimeoutMs: SSE_IDLE_TIMEOUT_MS,
+        logPrefix: "[TxWatcherStore]",
+        onChunk: (decoded) => {
+          buffer += decoded;
 
-        buffer += decoder.decode(value, { stream: true });
-
-        // Process complete events (delimited by double newline)
-        const lastDoubleNewline = buffer.lastIndexOf("\n\n");
-        if (lastDoubleNewline === -1) continue;
-
-        const complete = buffer.slice(0, lastDoubleNewline + 2);
-        buffer = buffer.slice(lastDoubleNewline + 2);
-
-        const events = parseSSEChunk(complete);
-
-        for (const sseEvent of events) {
-          if (!sseEvent.data) continue;
-
-          try {
-            switch (sseEvent.event) {
-              case "state": {
-                const payload = JSON.parse(sseEvent.data) as TxStateEvent;
-                const txStatus = toTxStatus(txHash, payload.state, {
-                  tx_type: payload.tx_type,
-                  retry_count: payload.retry_count,
-                  confirmed_at: payload.confirmed_at,
-                  last_error: payload.last_error,
-                });
-                updateTxEntry(get, set, txHash, { status: txStatus });
-
-                // If already terminal on connect
-                if (TERMINAL_STATES.includes(payload.state)) {
-                  reachedTerminal = true;
-                  handleTerminal(txHash, txStatus, get, set);
-                }
-                break;
-              }
-              case "state_change": {
-                const payload = JSON.parse(
-                  sseEvent.data
-                ) as TxStateChangeEvent;
-                const { transactions } = get();
-                const entry = transactions.get(txHash);
-                const txStatus = entry?.status
-                  ? { ...entry.status, state: payload.new_state }
-                  : toTxStatus(txHash, payload.new_state);
-                updateTxEntry(get, set, txHash, { status: txStatus });
-
-                // Update the loading toast with more specific message
-                if (payload.new_state === "confirmed") {
-                  toast("Confirmed on blockchain. Updating database...", {
-                    id: txHash,
-                    icon: loadingSpinner,
-                    duration: Infinity,
-                  });
-
-                  // Start confirmed-state timeout (#449): if "updated" doesn't
-                  // arrive within 30s, treat as stalled and call handleTerminal.
-                  // Guard: only one timer per TX (SSE reconnects may replay this event)
-                  const confirmedEntry = get().transactions.get(txHash);
-                  if (confirmedEntry && !confirmedEntry._confirmedTimeout) {
-                    const timeoutId = setTimeout(() => {
-                      const { transactions: txs } = get();
-                      const tx = txs.get(txHash);
-                      if (!tx || tx.isTerminal) return;
-
-                      console.warn(
-                        `[TxWatcherStore] TX ${txHash} stuck in "confirmed" for ${CONFIRMED_TIMEOUT_MS / 1000}s — treating as stalled`
-                      );
-
-                      const stalledStatus = toTxStatus(txHash, "confirmed", {
-                        ...tx.status,
-                        last_error:
-                          "Transaction confirmed on-chain but the platform update timed out. Your data may still sync — please refresh shortly.",
-                      });
-                      handleTerminal(txHash, stalledStatus, get, set);
-                    }, CONFIRMED_TIMEOUT_MS);
-
-                    updateTxEntry(get, set, txHash, {
-                      _confirmedTimeout: timeoutId,
-                    });
-                  }
-                }
-                break;
-              }
-              case "complete": {
-                const payload = JSON.parse(sseEvent.data) as TxCompleteEvent;
-                reachedTerminal = true;
-                const txStatus = toTxStatus(txHash, payload.final_state, {
-                  tx_type: payload.tx_type,
-                  confirmed_at: payload.confirmed_at,
-                  last_error: payload.last_error,
-                });
-                handleTerminal(txHash, txStatus, get, set);
-                break;
-              }
-              default:
-                // Unknown event type - ignore (could be heartbeat/comment)
-                break;
-            }
-          } catch (parseErr) {
-            console.warn(
-              "[TxWatcherStore] Failed to parse SSE event data:",
-              parseErr
-            );
+          // Process complete events (delimited by double newline)
+          const lastDoubleNewline = buffer.lastIndexOf("\n\n");
+          if (lastDoubleNewline === -1) {
+            return { reachedTerminal: false };
           }
-        }
-      }
 
-      // Stream ended cleanly without terminal event — fall back to polling
+          const complete = buffer.slice(0, lastDoubleNewline + 2);
+          buffer = buffer.slice(lastDoubleNewline + 2);
+
+          const events = parseSSEChunk(complete);
+          let chunkReachedTerminal = false;
+
+          for (const sseEvent of events) {
+            if (!sseEvent.data) continue;
+
+            try {
+              switch (sseEvent.event) {
+                case "state": {
+                  const payload = JSON.parse(sseEvent.data) as TxStateEvent;
+                  const txStatus = toTxStatus(txHash, payload.state, {
+                    tx_type: payload.tx_type,
+                    retry_count: payload.retry_count,
+                    confirmed_at: payload.confirmed_at,
+                    last_error: payload.last_error,
+                  });
+                  updateTxEntry(get, set, txHash, { status: txStatus });
+
+                  // If already terminal on connect
+                  if (TERMINAL_STATES.includes(payload.state)) {
+                    chunkReachedTerminal = true;
+                    handleTerminal(txHash, txStatus, get, set);
+                  }
+                  break;
+                }
+                case "state_change": {
+                  const payload = JSON.parse(
+                    sseEvent.data
+                  ) as TxStateChangeEvent;
+                  const { transactions } = get();
+                  const entry = transactions.get(txHash);
+                  const txStatus = entry?.status
+                    ? { ...entry.status, state: payload.new_state }
+                    : toTxStatus(txHash, payload.new_state);
+                  updateTxEntry(get, set, txHash, { status: txStatus });
+
+                  // Update the loading toast with more specific message
+                  if (payload.new_state === "confirmed") {
+                    toast("Confirmed on blockchain. Updating database...", {
+                      id: txHash,
+                      icon: loadingSpinner,
+                      duration: Infinity,
+                    });
+
+                    // Start confirmed-state timeout (#449): if "updated" doesn't
+                    // arrive within 30s, treat as stalled and call handleTerminal.
+                    // Guard: only one timer per TX (SSE reconnects may replay this event)
+                    const confirmedEntry = get().transactions.get(txHash);
+                    if (confirmedEntry && !confirmedEntry._confirmedTimeout) {
+                      const timeoutId = setTimeout(() => {
+                        const { transactions: txs } = get();
+                        const tx = txs.get(txHash);
+                        if (!tx || tx.isTerminal) return;
+
+                        console.warn(
+                          `[TxWatcherStore] TX ${txHash} stuck in "confirmed" for ${CONFIRMED_TIMEOUT_MS / 1000}s — treating as stalled`
+                        );
+
+                        const stalledStatus = toTxStatus(txHash, "confirmed", {
+                          ...tx.status,
+                          last_error:
+                            "Transaction confirmed on-chain but the platform update timed out. Your data may still sync — please refresh shortly.",
+                        });
+                        handleTerminal(txHash, stalledStatus, get, set);
+                      }, CONFIRMED_TIMEOUT_MS);
+
+                      updateTxEntry(get, set, txHash, {
+                        _confirmedTimeout: timeoutId,
+                      });
+                    }
+                  }
+                  break;
+                }
+                case "complete": {
+                  const payload = JSON.parse(sseEvent.data) as TxCompleteEvent;
+                  chunkReachedTerminal = true;
+                  const txStatus = toTxStatus(txHash, payload.final_state, {
+                    tx_type: payload.tx_type,
+                    confirmed_at: payload.confirmed_at,
+                    last_error: payload.last_error,
+                  });
+                  handleTerminal(txHash, txStatus, get, set);
+                  break;
+                }
+                default:
+                  // Unknown event type - ignore (could be heartbeat/comment)
+                  break;
+              }
+            } catch (parseErr) {
+              console.warn(
+                "[TxWatcherStore] Failed to parse SSE event data:",
+                parseErr
+              );
+            }
+          }
+
+          return { reachedTerminal: chunkReachedTerminal };
+        },
+      });
+
+      reachedTerminal = result.reachedTerminal;
+
+      if (result.kind === "aborted") return;
+
+      // Stream ended (cleanly OR via idle-timeout) without terminal event —
+      // fall back to polling. Single call site preserves the existing handoff.
       if (!reachedTerminal && !signal.aborted) {
-        console.warn(
-          "[TxWatcherStore] SSE stream ended without terminal event, falling back to polling"
-        );
+        if (result.kind === "idle-timeout") {
+          console.warn(
+            `[TxWatcherStore] SSE idle for ${SSE_IDLE_TIMEOUT_MS}ms, falling back to polling`
+          );
+        } else {
+          console.warn(
+            "[TxWatcherStore] SSE stream ended without terminal event, falling back to polling"
+          );
+        }
         startPollingFallback(txHash, get, set, signal);
       }
     } catch (err) {
@@ -455,7 +525,8 @@ function startPollingFallback(
   set: (partial: Partial<TxWatcherState>) => void,
   signal: AbortSignal
 ): void {
-  const authFetch = makeAuthFetch(get().jwt);
+  const jwtAtStart = get().jwt;
+  const authFetch = makeAuthFetch(jwtAtStart);
 
   void pollUntilTerminal(
     txHash,
@@ -465,7 +536,7 @@ function startPollingFallback(
         updateTxEntry(get, set, txHash, { status: pollStatus });
       },
       onComplete: (pollStatus) => {
-        handleTerminal(txHash, pollStatus, get, set);
+        void handlePollingTerminal(txHash, pollStatus, jwtAtStart, get, set);
       },
       onError: (pollError) => {
         console.error("[TxWatcherStore] Polling error:", pollError.message);
@@ -476,9 +547,83 @@ function startPollingFallback(
   );
 }
 
+/**
+ * Route a polling-produced terminal to the indexer fallback when appropriate,
+ * then call handleTerminal exactly once with the resolved or original status.
+ *
+ * Runs the fallback only when:
+ *   1. The terminal carries __reason === "budget_404" (from tx-polling-fallback).
+ *   2. The watched entry has a recoveryContext.
+ *   3. The JWT hasn't changed since we started polling (guards against
+ *      wallet-switch / logout races where the stale JWT closure would leak
+ *      the prior session's auth into the fallback fetch).
+ *
+ * Otherwise, handleTerminal fires directly with the original status.
+ */
+async function handlePollingTerminal(
+  txHash: string,
+  pollStatus: TxStatus,
+  jwtAtStart: string | null,
+  get: () => TxWatcherState,
+  set: (partial: Partial<TxWatcherState>) => void,
+): Promise<void> {
+  const entry = get().transactions.get(txHash);
+  const shouldRunFallback =
+    pollStatus.__reason === BUDGET_404_REASON &&
+    entry?.recoveryContext !== undefined &&
+    get().jwt === jwtAtStart &&
+    get().jwt !== null;
+
+  if (!shouldRunFallback || !entry?.recoveryContext) {
+    handleTerminal(txHash, pollStatus, get, set);
+    return;
+  }
+
+  // Use jwtAtStart (already confirmed current via the guard above) rather than
+  // re-reading get().jwt — a second read here could pick up a rotated JWT if
+  // a refresh or wallet-switch fires between the guard and this line.
+  const authFetch = makeAuthFetch(jwtAtStart);
+
+  let resolution: Awaited<ReturnType<typeof runIndexerFallback>>;
+  try {
+    resolution = await runIndexerFallback(entry.recoveryContext, txHash, authFetch);
+  } catch (err) {
+    console.warn("[TxWatcherStore] Indexer fallback threw:", err);
+    handleTerminal(txHash, pollStatus, get, set);
+    return;
+  }
+
+  if (resolution.kind === "unresolved") {
+    handleTerminal(txHash, pollStatus, get, set);
+    return;
+  }
+
+  // Resolved — build a clean TxStatus from the fallback result (without the
+  // internal __reason discriminator) and let handleTerminal fire the single
+  // final toast.
+  const resolvedStatus: TxStatus = {
+    tx_hash: txHash,
+    tx_type: pollStatus.tx_type,
+    state: resolution.state,
+    retry_count: pollStatus.retry_count,
+    last_error: resolution.last_error,
+  };
+  handleTerminal(txHash, resolvedStatus, get, set);
+}
+
 // =============================================================================
 // Store
 // =============================================================================
+
+/**
+ * @internal — exported solely so tx-watcher-store.test.ts can drive the
+ * polling-terminal and idempotency paths without booting the SSE loop.
+ * Do NOT call from production code; route polling terminals through
+ * register()'s startWatching → startPollingFallback flow instead.
+ */
+export const __test_only__handlePollingTerminal = handlePollingTerminal;
+/** @internal — same caveat as `__test_only__handlePollingTerminal`. */
+export const __test_only__handleTerminal = handleTerminal;
 
 export const txWatcherStore = createStore<TxWatcherStore>()((set, get) => ({
   // State
@@ -486,7 +631,7 @@ export const txWatcherStore = createStore<TxWatcherStore>()((set, get) => ({
   jwt: null,
 
   // Actions
-  register: (txHash, txType, toastConfig) => {
+  register: (txHash, txType, toastConfig, recoveryContext) => {
     const { transactions, jwt } = get();
 
     // Idempotent — skip if already watching this TX
@@ -501,6 +646,7 @@ export const txWatcherStore = createStore<TxWatcherStore>()((set, get) => ({
       isTerminal: false,
       subscriberCount: 0,
       toastConfig,
+      recoveryContext,
       registeredAt: Date.now(),
       _abortController: controller,
       _confirmedTimeout: null,

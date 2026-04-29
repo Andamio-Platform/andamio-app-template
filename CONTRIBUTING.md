@@ -1,5 +1,7 @@
 # Contributing to Andamio T3 App Template
 
+> **Audience**: This guide is for people contributing back to the upstream `andamio-app-template` repo. If you've forked the template to build your own app, ignore this file — it describes Andamio's repo conventions, not yours.
+
 Thank you for your interest in contributing! This document provides guidelines for contributing to the template.
 
 ## Getting Started

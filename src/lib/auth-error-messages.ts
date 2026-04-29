@@ -6,8 +6,6 @@
  * - Session management (JWT expiry, invalid sessions)
  * - Wallet interactions (signing declined, popup blocked)
  * - Registration (alias taken, wallet already registered)
- *
- * @see https://github.com/andamio-platform/andamio-app-v2/issues/323
  */
 
 import type { ParsedError, ErrorMapEntry } from "~/types/errors";

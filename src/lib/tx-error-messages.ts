@@ -4,8 +4,6 @@
  * Translates known API error codes into user-friendly messages.
  * Raw TX errors often contain nested JSON and technical details
  * that are confusing for end users.
- *
- * @see https://github.com/andamio-platform/andamio-app-v2/issues/323
  */
 
 /**

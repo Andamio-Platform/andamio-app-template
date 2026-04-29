@@ -6,8 +6,6 @@
  * - Gateway API calls (GatewayError)
  * - Generic fetch errors
  * - Network errors
- *
- * @see https://github.com/andamio-platform/andamio-app-v2/issues/323
  */
 
 import type { ParsedError, ErrorMapEntry } from "~/types/errors";

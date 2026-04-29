@@ -34,8 +34,6 @@ import {
 export function CourseManager() {
   const { isAuthenticated } = useAndamioAuth();
   const { data: allCourses = [], isLoading, error } = useOwnerCourses();
-  // Module counts temporarily disabled during hook migration
-  // TODO: Add useModuleCounts hook to restore this feature
   const moduleCounts: Record<string, number> = {};
 
   // Filter, sort, and view state

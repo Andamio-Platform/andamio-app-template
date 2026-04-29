@@ -70,8 +70,6 @@ const CLEANUP_DELAY_MS = 60_000;
  * If a TX stays in "confirmed" state (on-chain) without reaching "updated"
  * (DB synced) for this duration, treat it as stalled. This covers the case
  * where the SSE `complete` event is missed due to network issues.
- *
- * @see https://github.com/Andamio-Platform/andamio-app-v2/issues/449
  */
 const CONFIRMED_TIMEOUT_MS = 30_000;
 
@@ -81,13 +79,10 @@ const CONFIRMED_TIMEOUT_MS = 30_000;
  * gateway can accept the SSE connection and then never send a byte (most
  * likely on the on-load recovery path when the gateway's `pendingTx` cache
  * entry has expired) — the read loop would block in `await reader.read()`
- * forever, defeating the 404 budget (PR #500) and indexer fallback (PR #500
- * Unit 4) that exist to defend exactly this case.
+ * forever, defeating the 404 budget and indexer fallback that exist to
+ * defend exactly this case.
  *
  * Reset on every received chunk including SSE comments / heartbeats.
- *
- * @see https://github.com/Andamio-Platform/andamio-app-v2/issues/505
- * @see PR #500 / issue #494
  */
 const SSE_IDLE_TIMEOUT_MS = 20_000;
 

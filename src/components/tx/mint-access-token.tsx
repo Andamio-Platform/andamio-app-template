@@ -233,7 +233,6 @@ export function MintAccessToken({ onSuccess, onSubmitted, skipCeremony = false }
             // The old JWT doesn't have accessTokenAlias, so any operations
             // (course_create, project_create) would use the wrong owner alias.
             // We show celebration first, then auto-transition to reconnect flow.
-            // See: https://github.com/Andamio-Platform/andamio-app-v2/issues/286
             console.log("[MintAccessToken] TX confirmed - showing celebration");
             setCeremonyState("celebration");
 

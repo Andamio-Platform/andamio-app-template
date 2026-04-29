@@ -39,6 +39,7 @@ import {
   PendingIcon,
   AlertIcon,
   AddIcon,
+  UploadIcon,
 } from "~/components/icons";
 import { cn } from "~/lib/utils";
 import { StudioProvider, useStudioContext } from "./studio-context";
@@ -214,12 +215,27 @@ function StudioSidebarLayoutInner({
           </div>
 
           <AndamioScrollArea className="flex-1 min-h-0">
-            <div className="flex flex-col gap-1 p-3">
+            <div className="flex flex-col gap-1 px-4 py-3">
+              {/* Import Quick Action */}
+              <Link
+                href="/studio/import"
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 mb-2 rounded-sm border border-dashed transition-all",
+                  pathname === "/studio/import"
+                    ? "bg-primary/10 border-primary/30 text-primary"
+                    : "border-border hover:border-primary/30 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <UploadIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">Import Module</span>
+              </Link>
+
               {/* Courses Section */}
               <SectionHeader
                 title="Courses"
                 count={filteredCourses.length}
                 icon={<CourseIcon className="h-4 w-4" />}
+                variant="course"
                 onCreate={() => {
                   if (pathname !== "/studio") {
                     router.push("/studio");
@@ -260,6 +276,7 @@ function StudioSidebarLayoutInner({
                 title="Projects"
                 count={filteredProjects.length}
                 icon={<ProjectIcon className="h-4 w-4" />}
+                variant="project"
                 onCreate={() => {
                   if (pathname !== "/studio") {
                     router.push("/studio");
@@ -320,24 +337,25 @@ interface SectionHeaderProps {
   count: number;
   icon: React.ReactNode;
   onCreate: () => void;
-  isCreateActive?: boolean;
+  variant: "course" | "project";
   className?: string;
 }
 
-function SectionHeader({ title, count, icon, onCreate, isCreateActive, className }: SectionHeaderProps) {
+function SectionHeader({ title, count, icon, onCreate, variant, className }: SectionHeaderProps) {
+  const iconColor = variant === "course" ? "text-primary" : "text-secondary";
   return (
     <div className={cn("flex items-center justify-between px-2 py-2", className)}>
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground">{icon}</span>
-        <span className="text-sm font-medium">{title}</span>
-        <AndamioBadge variant="secondary" className="text-[10px] h-5 px-1.5">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={cn("shrink-0", iconColor)}>{icon}</span>
+        <span className="text-sm font-medium truncate">{title}</span>
+        <AndamioBadge variant="outline" className="text-[10px] h-5 px-1.5 shrink-0">
           {count}
         </AndamioBadge>
       </div>
       <AndamioButton
-        variant={isCreateActive ? "default" : "ghost"}
+        variant="ghost"
         size="sm"
-        className="h-6 px-2 text-xs"
+        className="h-6 px-2 text-xs shrink-0"
         onClick={onCreate}
       >
         <AddIcon className="h-3 w-3 mr-1" />
@@ -364,7 +382,7 @@ function CourseListItem({ course, isSelected }: CourseListItemProps) {
     <Link
       href={`/studio/course/${course.courseId}`}
       className={cn(
-        "group flex w-full items-center gap-3 px-3 py-3 text-left rounded-lg border transition-all duration-150",
+        "group flex w-full items-center gap-3 px-3 py-3 text-left rounded-sm border transition-all duration-150",
         isSelected
           ? "bg-primary/10 border-primary/30 shadow-sm"
           : "bg-transparent border-transparent hover:bg-muted/50 hover:border-border active:bg-muted/70",
@@ -434,9 +452,9 @@ function ProjectListItem({ project, isSelected }: ProjectListItemProps) {
       href={`/studio/project/${project.projectId}`}
       title={tooltipText}
       className={cn(
-        "group flex w-full items-center gap-3 px-3 py-3 text-left rounded-lg border transition-all duration-150",
+        "group flex w-full items-center gap-3 px-3 py-3 text-left rounded-sm border transition-all duration-150",
         isSelected
-          ? "bg-primary/10 border-primary/30 shadow-sm"
+          ? "bg-secondary/10 border-secondary/30 shadow-sm"
           : "bg-transparent border-transparent hover:bg-muted/50 hover:border-border active:bg-muted/70",
         !isRegistered && "opacity-60"
       )}
@@ -444,10 +462,10 @@ function ProjectListItem({ project, isSelected }: ProjectListItemProps) {
       {/* Status indicator */}
       <div className={cn(
         "h-8 w-8 rounded-md flex items-center justify-center flex-shrink-0",
-        isRegistered && isOnChain ? "bg-primary/10" : isRegistered ? "bg-muted/10" : "bg-muted"
+        isRegistered && isOnChain ? "bg-secondary/10" : isRegistered ? "bg-muted/10" : "bg-muted"
       )}>
         {isRegistered && isOnChain ? (
-          <SuccessIcon className="h-4 w-4 text-primary" />
+          <SuccessIcon className="h-4 w-4 text-secondary" />
         ) : isRegistered ? (
           <PendingIcon className="h-4 w-4 text-muted-foreground" />
         ) : (
@@ -459,7 +477,7 @@ function ProjectListItem({ project, isSelected }: ProjectListItemProps) {
       <div className="flex-1 min-w-0">
         <span className={cn(
           "text-sm font-medium truncate transition-colors block",
-          isSelected ? "text-primary" : "group-hover:text-foreground"
+          isSelected ? "text-secondary" : "group-hover:text-foreground"
         )}>
           {project.title || "Untitled Project"}
         </span>
@@ -469,7 +487,7 @@ function ProjectListItem({ project, isSelected }: ProjectListItemProps) {
       <NextIcon className={cn(
         "h-4 w-4 flex-shrink-0 transition-all duration-150",
         isSelected
-          ? "text-primary opacity-100 translate-x-0"
+          ? "text-secondary opacity-100 translate-x-0"
           : "text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-70 group-hover:translate-x-0"
       )} />
     </Link>

@@ -32,7 +32,7 @@ export function PendingProjectBanner({ hasActiveModules = false }: PendingProjec
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-secondary/30 bg-secondary/5 px-4 py-3 mb-4">
+    <div className="flex items-center gap-3 rounded-sm border border-secondary/30 bg-secondary/5 px-4 py-3 mb-4">
       <InfoIcon className="h-4 w-4 text-secondary shrink-0" />
       <AndamioText variant="small" className="flex-1 text-sm">
         {hasActiveModules ? (

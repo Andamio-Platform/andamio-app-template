@@ -37,6 +37,8 @@ import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
 import { AndamioHeading } from "~/components/andamio/andamio-heading";
 import { getWalletAddressBech32 } from "~/lib/wallet-address";
+import { PendingProjectBanner } from "~/components/studio/pending-project-banner";
+import { pendingProject } from "~/lib/pending-project";
 import { useStudioContext } from "./studio-context";
 
 // =============================================================================
@@ -127,7 +129,19 @@ export default function StudioHomePage() {
   const projectCount = ownedProjects.length + managedOnly.length;
 
   if (createMode === "course") {
-    return <CreateCoursePanel onCancel={cancelCreate} />;
+    return (
+      <CreateCoursePanel
+        onCancel={cancelCreate}
+        onCourseCreated={(courseId) => {
+          if (pendingProject.get()) {
+            cancelCreate();
+            router.push(`/studio/course/${courseId}`);
+          } else {
+            cancelCreate();
+          }
+        }}
+      />
+    );
   }
 
   if (createMode === "project") {
@@ -136,6 +150,10 @@ export default function StudioHomePage() {
         onCancel={cancelCreate}
         onSuccess={(projectId) => {
           router.push(`/studio/project/${projectId}`);
+        }}
+        onCreateCourseForProject={(title) => {
+          pendingProject.set(title);
+          showCreateCourse();
         }}
       />
     );
@@ -164,12 +182,12 @@ interface WelcomePanelProps {
 
 function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProject }: WelcomePanelProps) {
   return (
-    <div className="flex h-full flex-col bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="flex h-full flex-col bg-background">
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="max-w-lg text-center space-y-12">
           {/* Icon */}
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent ring-1 ring-primary/20 mx-auto shadow-lg shadow-primary/10">
-            <CourseIcon className="h-8 w-8 text-primary" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-primary/10 mx-auto">
+            <CourseIcon className="h-5 w-5 text-primary" />
           </div>
 
           {/* Title */}
@@ -193,7 +211,7 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
             </div>
 
             <div className="space-y-4 text-center">
-              <AndamioButton variant="outline" onClick={onCreateProject}>
+              <AndamioButton variant="secondary" onClick={onCreateProject}>
                 <ProjectIcon className="mr-2 h-4 w-4" />
                 Create a Project
               </AndamioButton>
@@ -233,9 +251,10 @@ function WelcomePanel({ courseCount, projectCount, onCreateCourse, onCreateProje
 
 interface CreateCoursePanelProps {
   onCancel: () => void;
+  onCourseCreated?: (courseId: string) => void;
 }
 
-function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
+function CreateCoursePanel({ onCancel, onCourseCreated }: CreateCoursePanelProps) {
   const router = useRouter();
   const { user } = useAndamioAuth();
   const { wallet, connected } = useWallet();
@@ -262,10 +281,15 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
 
   const hasRegisteredRef = React.useRef(false);
   const onCancelRef = React.useRef(onCancel);
+  const onCourseCreatedRef = React.useRef(onCourseCreated);
 
   useEffect(() => {
     onCancelRef.current = onCancel;
   }, [onCancel]);
+
+  useEffect(() => {
+    onCourseCreatedRef.current = onCourseCreated;
+  }, [onCourseCreated]);
 
   const { status: txStatus, isSuccess: txConfirmed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
@@ -326,8 +350,13 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
             hasRegisteredRef.current = false;
             reset();
 
-            // Return to welcome state
-            onCancelRef.current();
+            // If created during project detour, redirect to course dashboard
+            if (onCourseCreatedRef.current) {
+              onCourseCreatedRef.current(metadata.policyId);
+            } else {
+              // Return to welcome state
+              onCancelRef.current();
+            }
           } else if (status.state === "failed" || status.state === "expired") {
             toast.error("Course Creation Failed", {
               description: status.last_error ?? "Please try again or contact support.",
@@ -431,12 +460,14 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
               </AndamioButton>
             </div>
 
+            <PendingProjectBanner />
+
             {/* Form Card */}
             <AndamioCard className="mt-6">
               <AndamioCardContent className="py-8">
                 {/* Requirements Alert */}
                 {!hasAccessToken && (
-                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 mb-6">
+                  <div className="rounded-sm border border-destructive/50 bg-destructive/10 p-4 mb-6">
                     <div className="flex items-center gap-2">
                       <AlertIcon className="h-4 w-4 text-destructive" />
                       <AndamioText className="text-sm text-destructive">
@@ -447,7 +478,7 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
                 )}
 
                 {hasAccessToken && !hasInitiatorData && (
-                  <div className="rounded-lg border border-border bg-muted/50 p-4 mb-6">
+                  <div className="rounded-sm border border-border bg-muted/50 p-4 mb-6">
                     <div className="flex items-center gap-2">
                       <LoadingIcon className="h-4 w-4 animate-spin text-muted-foreground" />
                       <AndamioText className="text-sm text-muted-foreground">
@@ -464,7 +495,7 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
                     <ChecklistStep
                       step={1}
                       title="Owner"
-                      status={user.accessTokenAlias!}
+                      status={user.accessTokenAlias}
                     >
                       <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
                         {user.accessTokenAlias}
@@ -496,7 +527,7 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
 
                     {/* Transaction Status */}
                     {state !== "idle" && (
-                      <div className="rounded-lg border bg-muted/30 p-4 mt-4">
+                      <div className="rounded-sm border bg-muted/30 p-4 mt-4">
                         <div className="flex items-center gap-3">
                           {state === "error" ? (
                             <AlertIcon className="h-5 w-5 text-destructive" />
@@ -565,7 +596,7 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
 
                 {/* Waiting for Confirmation */}
                 {isWaitingForConfirmation && (
-                  <div className="rounded-lg border bg-muted/30 p-6 text-center">
+                  <div className="rounded-sm border bg-muted/30 p-6 text-center">
                     <LoadingIcon className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
                     <AndamioText className="font-medium mb-1">
                       Confirming on blockchain...
@@ -600,10 +631,20 @@ function CreateCoursePanel({ onCancel }: CreateCoursePanelProps) {
 interface CreateProjectPanelProps {
   onCancel: () => void;
   onSuccess: (projectId: string) => void;
+  onCreateCourseForProject: (title: string) => void;
 }
 
-function CreateProjectPanel({ onCancel, onSuccess }: CreateProjectPanelProps) {
+function CreateProjectPanel({ onCancel, onSuccess, onCreateCourseForProject }: CreateProjectPanelProps) {
   const [isConfirmed, setIsConfirmed] = useState(false);
+
+  // Read and consume pending project title from sessionStorage
+  const [initialTitle] = useState(() => {
+    const stored = pendingProject.get();
+    if (stored) {
+      pendingProject.clear();
+    }
+    return stored ?? undefined;
+  });
 
   return (
     <div className="h-full overflow-hidden bg-gradient-to-br from-background via-background to-secondary/5">
@@ -636,6 +677,8 @@ function CreateProjectPanel({ onCancel, onSuccess }: CreateProjectPanelProps) {
             <CreateProject
               onSuccess={onSuccess}
               onConfirmed={() => setIsConfirmed(true)}
+              initialTitle={initialTitle}
+              onCreateCourseForProject={onCreateCourseForProject}
             />
           </div>
         </div>

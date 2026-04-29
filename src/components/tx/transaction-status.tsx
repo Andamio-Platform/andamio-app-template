@@ -85,7 +85,7 @@ export function TransactionStatus({
   // Success state
   if (state === "success" && result?.success) {
     return (
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4" role="status" aria-live="polite">
+      <div className="rounded-sm border border-primary/30 bg-primary/5 p-4" role="status" aria-live="polite">
         <div className="flex items-start gap-3">
           <VerifiedIcon className="h-5 w-5 text-primary shrink-0" />
           <div className="flex-1 space-y-2">
@@ -114,7 +114,7 @@ export function TransactionStatus({
   // Error state
   if (state === "error") {
     return (
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4" role="alert" aria-live="assertive">
+      <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4" role="alert" aria-live="assertive">
         <div className="flex items-start gap-3">
           <ErrorIcon className="h-5 w-5 text-destructive shrink-0" />
           <div className="flex-1 space-y-2">
@@ -159,7 +159,7 @@ export function TransactionStatus({
 
   // Loading states (fetching, signing, submitting, confirming)
   return (
-    <div className="rounded-lg border bg-muted/30 p-4" role="status" aria-live="polite">
+    <div className="rounded-sm border bg-muted/30 p-4" role="status" aria-live="polite">
       <div className="flex items-center gap-3">
         <LoadingIcon className="h-5 w-5 animate-spin text-muted-foreground" />
         <div>

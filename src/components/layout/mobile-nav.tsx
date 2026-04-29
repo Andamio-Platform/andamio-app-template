@@ -41,7 +41,7 @@ export function MobileNav() {
         <AndamioButton
           variant="ghost"
           size="sm"
-          className="h-9 w-9 p-0 text-primary-foreground/80 hover:text-primary-foreground md:hidden"
+          className="text-primary-foreground/80 hover:text-primary-foreground h-10 w-10 p-0 md:hidden"
           aria-label="Open navigation menu"
         >
           <MenuIcon className="h-4 w-4" />
@@ -50,14 +50,14 @@ export function MobileNav() {
 
       <SheetContent side="left" className="flex flex-col gap-0 p-0">
         {/* Header with branding */}
-        <SheetHeader className="border-b border-border gap-0 py-4">
+        <SheetHeader className="border-border gap-0 border-b py-4">
           <div className="flex items-center gap-3 px-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <div className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-lg">
               <ModuleIcon className="h-4 w-4" />
             </div>
             <div className="flex flex-col">
               <SheetTitle>{BRANDING.name}</SheetTitle>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-muted-foreground text-[10px]">
                 {BRANDING.tagline}
               </span>
             </div>
@@ -77,7 +77,7 @@ export function MobileNav() {
         </nav>
 
         {/* User Section */}
-        <SheetFooter className="border-t border-border gap-0 p-0 block">
+        <SheetFooter className="border-border block gap-0 border-t p-0">
           <SidebarUserSection
             variant="expanded"
             showDisconnect

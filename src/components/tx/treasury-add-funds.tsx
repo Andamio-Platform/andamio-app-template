@@ -16,7 +16,8 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
-import { ConfirmDialog } from "~/components/ui/confirm-dialog";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
+import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import {
   AndamioCard,
@@ -178,7 +179,7 @@ export function TreasuryAddFunds({
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => reset()}
             messages={{
               success: "Transaction submitted! Waiting for confirmation...",
@@ -188,7 +189,7 @@ export function TreasuryAddFunds({
 
         {/* Gateway Confirmation Status */}
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
@@ -208,7 +209,7 @@ export function TreasuryAddFunds({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
@@ -224,18 +225,24 @@ export function TreasuryAddFunds({
         )}
 
         {/* Submit Button — idle state shows confirmation dialog */}
-        {showAction && state === "idle" && isValidAmount && (
-          <ConfirmDialog
-            trigger={
-              <AndamioButton className="w-full" disabled={!canSubmit}>
-                {ui.buttonText}
-              </AndamioButton>
-            }
-            title="Add Funds to Treasury?"
-            description={`This will transfer ${parsedAmount} ADA from your wallet to the project treasury. Funds are used for task rewards. This action is recorded on-chain.`}
-            confirmText={`Add ${parsedAmount} ADA`}
-            onConfirm={handleAddFunds}
-          />
+        {showAction && state === "idle" && (
+          isValidAmount ? (
+            <AndamioConfirmDialog
+              trigger={
+                <AndamioButton className="w-full" disabled={!canSubmit}>
+                  {ui.buttonText}
+                </AndamioButton>
+              }
+              title="Add Funds to Treasury?"
+              description={`This will transfer ${parsedAmount} ADA from your wallet to the project treasury. Funds are used for task rewards. This action is recorded on-chain.`}
+              confirmText={`Add ${parsedAmount} ADA`}
+              onConfirm={handleAddFunds}
+            />
+          ) : (
+            <AndamioButton className="w-full" disabled>
+              {ui.buttonText}
+            </AndamioButton>
+          )
         )}
         {showAction && state !== "idle" && (
           <TransactionButton

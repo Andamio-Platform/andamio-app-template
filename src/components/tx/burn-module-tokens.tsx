@@ -17,6 +17,7 @@ import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { useUpdateCourseModuleStatus } from "~/hooks/api/course/use-course-module";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import {
   AndamioCard,
   AndamioCardContent,
@@ -251,7 +252,7 @@ export function BurnModuleTokens({
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => reset()}
             messages={{
               success: "Transaction submitted! Waiting for confirmation...",
@@ -261,7 +262,7 @@ export function BurnModuleTokens({
 
         {/* Gateway Confirmation Status */}
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
@@ -281,7 +282,7 @@ export function BurnModuleTokens({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">

@@ -25,7 +25,7 @@ import {
   AndamioDialogFooter,
 } from "~/components/andamio/andamio-dialog";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { useCreateCourseModule, useUpdateCourseModule, useTeacherCourseModules } from "~/hooks/api/course/use-course-module";
+import { useCreateCourseModule, useTeacherCourseModules } from "~/hooks/api/course/use-course-module";
 import { useSaveModuleDraft } from "~/hooks/api/course/use-save-module-draft";
 import type { WizardStepConfig } from "../types";
 import type { ModuleDraft } from "~/stores/module-draft-store";
@@ -37,20 +37,18 @@ interface StepCredentialProps {
 }
 
 export function StepCredential({ config, direction }: StepCredentialProps) {
-  const { data, goNext, canGoPrevious, goPrevious, refetchData, courseId, moduleCode, isNewModule, onModuleCreated } = useWizard();
+  const { data, goNext, canGoPrevious, goPrevious, refetchData, courseId, moduleCode, isNewModule, onModuleCreated, draft, setMetadata } = useWizard();
   const { isAuthenticated } = useAndamioAuth();
 
-  const [title, setTitle] = useState(
-    typeof data.courseModule?.title === "string" ? data.courseModule.title : ""
-  );
-  const [description, setDescription] = useState(
-    typeof data.courseModule?.description === "string" ? data.courseModule.description : ""
-  );
+  // Read title/description from draft store (enables dirty tracking and auto-save)
+  // Falls back to server data for initial load or when draft is not ready
+  const title = draft?.title ?? (typeof data.courseModule?.title === "string" ? data.courseModule.title : "");
+  const description = draft?.description ?? (typeof data.courseModule?.description === "string" ? data.courseModule.description : "");
+
   const [error, setError] = useState<string | null>(null);
 
   // Use hooks for API calls
   const createModule = useCreateCourseModule();
-  const updateModule = useUpdateCourseModule();
   const saveModuleDraft = useSaveModuleDraft();
 
   // Duplicate module state
@@ -103,12 +101,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   const moduleStatus = data.courseModule?.status;
   const isModuleLocked = moduleStatus === "approved" || moduleStatus === "active" || moduleStatus === "pending_tx";
 
-  const hasChanges =
-    title !== (typeof data.courseModule?.title === "string" ? data.courseModule.title : "") ||
-    description !== (typeof data.courseModule?.description === "string" ? data.courseModule.description : "");
-
   const canProceed = title.trim().length > 0 && editableModuleCode.trim().length > 0 && !moduleCodeExists;
-  const isSaving = createModule.isPending || updateModule.isPending;
+  const isSaving = createModule.isPending;
 
   /**
    * Create a new module (for new module mode)
@@ -131,28 +125,6 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
       await onModuleCreated(editableModuleCode.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create module");
-    }
-  };
-
-  /**
-   * Update existing module
-   */
-  const handleUpdateModule = async () => {
-    if (!isAuthenticated || !canProceed || !moduleCode) return;
-
-    setError(null);
-
-    try {
-      await updateModule.mutateAsync({
-        courseId: courseId,
-        moduleCode,
-        data: { title, description },
-      });
-
-      await refetchData();
-      goNext();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
     }
   };
 
@@ -242,9 +214,9 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
   const handleContinue = async () => {
     if (isNewModule) {
       await handleCreateModule();
-    } else if (hasChanges) {
-      await handleUpdateModule();
     } else {
+      // For existing modules, navigation just navigates.
+      // Changes are saved via the draft store + WizardSaveBar.
       goNext();
     }
   };
@@ -262,8 +234,8 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
             className="shrink-0"
           >
             <div className="relative">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
-                <CredentialIcon className="h-12 w-12 text-primary-foreground" />
+              <div className="w-16 h-16 rounded-sm bg-primary/10 flex items-center justify-center">
+                <CredentialIcon className="h-8 w-8 text-primary" />
               </div>
               <motion.div
                 initial={{ scale: 0 }}
@@ -304,7 +276,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
               <AndamioInput
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => setMetadata?.(e.target.value, description)}
                 placeholder="e.g., Introduction to Smart Contracts"
                 maxLength={200}
                 className="text-lg"
@@ -365,7 +337,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
             <AndamioTextarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setMetadata?.(title, e.target.value)}
               placeholder="A brief overview of this module's learning journey..."
               rows={3}
             />
@@ -431,7 +403,7 @@ export function StepCredential({ config, direction }: StepCredentialProps) {
               )}
             </div>
 
-            <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+            <div className="rounded-sm border bg-muted/50 p-3 space-y-1">
               <AndamioText variant="small" className="font-medium">Will be copied:</AndamioText>
               <ul className="text-sm text-muted-foreground space-y-0.5">
                 <li>• Module title: &quot;{title} (Copy)&quot;</li>

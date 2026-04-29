@@ -62,7 +62,10 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
 
   // Check if SLTs are locked (module is approved or on-chain)
   const moduleStatus = data.courseModule?.status;
-  const isLocked = moduleStatus === "approved" || moduleStatus === "active" || moduleStatus === "pending_tx";
+  const isApproved = moduleStatus === "approved";
+  const isPendingTx = moduleStatus === "pending_tx";
+  const isActive = moduleStatus === "active";
+  const isLocked = isApproved || isPendingTx || isActive;
 
   // Use draft SLTs if available, otherwise fall back to data.slts
   const slts: SLTDraft[] = draftSlts ?? data.slts.map((slt, idx) => ({
@@ -160,19 +163,39 @@ export function StepSLTs({ config, direction }: StepSLTsProps) {
       <div className="space-y-6">
         {/* Input Section or Locked Notice */}
         {isLocked ? (
-          <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
+          <div className="rounded-sm border-2 border-primary/20 bg-primary/5 p-4">
             <div className="flex items-start gap-3">
               <LockedIcon className="h-5 w-5 flex-shrink-0 text-primary mt-0.5" />
               <div className="space-y-1">
-                <AndamioText className="font-medium text-primary">On-Chain Learning Targets</AndamioText>
-                <AndamioText variant="small">
-                  This module has been minted. These Learning Targets are verified on-chain data and cannot be modified.
-                </AndamioText>
+                {isActive && (
+                  <>
+                    <AndamioText className="font-medium text-primary">On-Chain Learning Targets</AndamioText>
+                    <AndamioText variant="small">
+                      These Learning Targets are verified on-chain and cannot be modified.
+                    </AndamioText>
+                  </>
+                )}
+                {isPendingTx && (
+                  <>
+                    <AndamioText className="font-medium text-primary">Publishing...</AndamioText>
+                    <AndamioText variant="small">
+                      Learning Targets are locked while the transaction is processing.
+                    </AndamioText>
+                  </>
+                )}
+                {isApproved && (
+                  <>
+                    <AndamioText className="font-medium text-primary">Ready to Publish</AndamioText>
+                    <AndamioText variant="small">
+                      Learning Targets are locked. To edit, return this module to Draft.
+                    </AndamioText>
+                  </>
+                )}
               </div>
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border-2 border-border p-4">
+          <div className="rounded-sm border-2 border-border p-4">
             <div className="flex items-center gap-3">
               <AndamioInput
                 id={inputId}
@@ -309,7 +332,7 @@ function SortableSltItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group flex items-center gap-3 px-4 py-3 rounded-lg border transition-all duration-150",
+        "group flex items-center gap-3 px-4 py-3 rounded-sm border transition-all duration-150",
         isDragging
           ? "border-primary bg-primary/5 shadow-lg z-50"
           : isEditing

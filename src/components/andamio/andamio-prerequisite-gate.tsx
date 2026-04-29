@@ -31,8 +31,8 @@ interface AndamioPrerequisiteGateProps {
 
 /**
  * soft-gate component for "Earned Progression" (Design Principle 3).
- *
- * Instead of hiding features, it shows them in a "ghosted" state with
+ * 
+ * Instead of hiding features, it shows them in a "ghosted" state with 
  * a clear path to unlock them. This turns the UI into a roadmap.
  */
 export function AndamioPrerequisiteGate({
@@ -55,11 +55,11 @@ export function AndamioPrerequisiteGate({
 
       {/* Unlock Overlay */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-        <div className="bg-card/80 backdrop-blur-md border border-primary/20 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center gap-3 animate-in-slide-up">
+        <div className="bg-card/80 backdrop-blur-md border border-primary/20 rounded-sm p-6 shadow-xl flex flex-col items-center text-center gap-3 animate-in-slide-up">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <LockedIcon className="h-6 w-6 text-primary" />
           </div>
-
+          
           <div className="space-y-1">
             <AndamioBadge variant="secondary" className="mb-2">
               Locked Feature
@@ -73,7 +73,7 @@ export function AndamioPrerequisiteGate({
           </div>
 
           {unlockPath && (
-            <Link
+            <Link 
               href={unlockPath}
               className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline transition-standard"
             >

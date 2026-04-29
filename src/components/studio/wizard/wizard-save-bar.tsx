@@ -43,7 +43,7 @@ export function WizardSaveBar({
           exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.2 }}
           className={cn(
-            "flex items-center justify-between gap-4 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3",
+            "flex items-center justify-between gap-4 rounded-sm border border-warning/30 bg-warning/5 px-4 py-3",
             className
           )}
         >

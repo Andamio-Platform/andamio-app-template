@@ -111,7 +111,7 @@ export function AndamioPageLoading({
       {variant === "cards" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: itemCount }).map((_, i) => (
-            <div key={i} className="border rounded-xl overflow-hidden">
+            <div key={i} className="border rounded-sm overflow-hidden">
               {/* Image placeholder */}
               <AndamioSkeleton className="h-32 sm:h-40 w-full rounded-none" />
               {/* Content */}
@@ -285,7 +285,7 @@ export function AndamioListLoading({
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-3 p-3 rounded-lg border bg-muted/20"
+          className="flex items-center gap-3 p-3 rounded-sm border bg-muted/20"
         >
           {showIcon && (
             <AndamioSkeleton className="h-8 w-8 rounded-md flex-shrink-0" />

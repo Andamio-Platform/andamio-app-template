@@ -34,7 +34,7 @@ export const SIDEBAR_DESKTOP = {
  * Mobile sidebar item styling (larger touch targets).
  */
 export const SIDEBAR_MOBILE = {
-  itemPadding: "py-2.5 px-3",
+  itemPadding: "py-3 px-3",
   iconSize: "h-4 w-4",
   fontSize: "text-sm",
   gap: "gap-3",

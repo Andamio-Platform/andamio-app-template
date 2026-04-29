@@ -212,25 +212,25 @@ export default function EditorPage() {
           <div>
             <AndamioHeading level={3} size="base" className="mb-2">Available Extension Kits:</AndamioHeading>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg border p-4">
+              <div className="rounded-sm border p-4">
                 <AndamioHeading level={4} size="base" className="font-medium mb-1">BaseExtensionKit</AndamioHeading>
                 <AndamioText variant="small">
                   Core extensions for basic text editing
                 </AndamioText>
               </div>
-              <div className="rounded-lg border p-4">
+              <div className="rounded-sm border p-4">
                 <AndamioHeading level={4} size="base" className="font-medium mb-1">BasicEditorKit</AndamioHeading>
                 <AndamioText variant="small">
                   Text formatting with lists and links
                 </AndamioText>
               </div>
-              <div className="rounded-lg border p-4">
+              <div className="rounded-sm border p-4">
                 <AndamioHeading level={4} size="base" className="font-medium mb-1">ReadOnlyExtensionKit</AndamioHeading>
                 <AndamioText variant="small">
                   For displaying content without editing
                 </AndamioText>
               </div>
-              <div className="rounded-lg border p-4">
+              <div className="rounded-sm border p-4">
                 <AndamioHeading level={4} size="base" className="font-medium mb-1">FullEditorKit</AndamioHeading>
                 <AndamioText variant="small">
                   All features including images and menus

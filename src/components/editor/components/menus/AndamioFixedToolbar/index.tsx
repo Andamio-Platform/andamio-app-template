@@ -54,7 +54,7 @@ export function AndamioFixedToolbar({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-1 rounded-lg border border-border bg-background p-2 sm:p-3 md:gap-1.5",
+        "flex flex-wrap items-center gap-1 rounded-sm border border-border bg-background p-2 sm:p-3 md:gap-1.5",
         className,
       )}
     >

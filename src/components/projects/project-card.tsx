@@ -8,6 +8,8 @@ import {
   PendingIcon,
   UserIcon,
   CredentialIcon,
+  WalletIcon,
+  TaskIcon,
 } from "~/components/icons";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioText } from "~/components/andamio/andamio-text";
@@ -51,7 +53,7 @@ function EligibilityBadge({
         <AndamioTooltip>
           <AndamioTooltipTrigger asChild>
             <div className="flex items-center gap-1.5">
-              <AndamioBadge variant="outline" className="text-primary border-primary/30">
+              <AndamioBadge variant="outline" className="text-secondary border-secondary/30">
                 <SuccessIcon className="h-3 w-3 mr-1" />
                 Open
               </AndamioBadge>
@@ -67,7 +69,7 @@ function EligibilityBadge({
       <AndamioTooltip>
         <AndamioTooltipTrigger asChild>
           <div className="flex items-center gap-1.5">
-            <AndamioBadge variant="outline" className="text-primary border-primary/30">
+            <AndamioBadge variant="outline" className="text-secondary border-secondary/30">
               <CredentialIcon className="h-3 w-3 mr-1" />
               Qualified
             </AndamioBadge>
@@ -131,11 +133,16 @@ export function ProjectCard({
     imageUrl,
     ownerAlias,
     prerequisites,
+    totalRewardLovelace,
+    availableTaskCount,
   } = project;
 
   const displayTitle = title || projectId?.slice(0, 24) || "Untitled Project";
   const prereqCount = prerequisites?.length ?? 0;
   const showImage = imageUrl && !imageError;
+  const rewardAda = totalRewardLovelace != null && totalRewardLovelace > 0
+    ? totalRewardLovelace / 1_000_000
+    : null;
 
   return (
     <Link
@@ -156,7 +163,7 @@ export function ProjectCard({
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-secondary/30 via-secondary/20 to-accent/15" />
+            <div className="w-full h-full bg-secondary/10" />
           )}
           {/* Gradient overlay for title readability */}
           <div className={showImage
@@ -176,7 +183,7 @@ export function ProjectCard({
         </div>
 
         {/* Card body — solid background */}
-        <AndamioCardContent className="pt-3">
+        <AndamioCardContent>
           {description ? (
             <AndamioCardDescription className="line-clamp-2">
               {description}
@@ -189,8 +196,8 @@ export function ProjectCard({
         </AndamioCardContent>
 
         <AndamioCardFooter className="border-t pt-3 mt-auto">
-          <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between w-full gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap justify-start items-center gap-2">
               {ownerAlias && (
                 <div className="flex items-center gap-1.5 min-w-0">
                   <UserIcon className="h-3.5 w-3.5 shrink-0" />
@@ -201,6 +208,18 @@ export function ProjectCard({
                 <div className="flex items-center gap-1.5 shrink-0">
                   <CredentialIcon className="h-3.5 w-3.5" />
                   <span className="text-xs">{prereqCount} {prereqCount === 1 ? "prereq" : "prereqs"}</span>
+                </div>
+              )}
+              {rewardAda != null && (
+                <div className="flex items-center gap-1.5 shrink-0 text-secondary">
+                  <WalletIcon className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium">{rewardAda} ADA</span>
+                </div>
+              )}
+              {availableTaskCount != null && availableTaskCount > 0 && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <TaskIcon className="h-3.5 w-3.5" />
+                  <span className="text-xs">{availableTaskCount} {availableTaskCount === 1 ? "task" : "tasks"}</span>
                 </div>
               )}
             </div>

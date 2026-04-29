@@ -37,6 +37,7 @@ import {
   SuccessIcon,
   AlertIcon,
   CourseIcon,
+  LockedIcon,
 } from "~/components/icons";
 import { PrerequisiteList } from "~/components/project/prerequisite-list";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -94,20 +95,20 @@ export default function ProjectDetailPage() {
     const isContributor = (project.contributors ?? []).some((c) => c.alias === alias);
     if (!isContributor) return null;
 
-    const hasClaimed = (project.credentialClaims ?? []).some((c) => c.alias === alias);
-
-    const hasPending = myCommitments.some(c =>
-      c.commitmentStatus === "SUBMITTED" ||
+    const hasCommitted = myCommitments.some(c =>
+      c.commitmentStatus === "COMMITTED" ||
       c.commitmentStatus === "REFUSED" ||
       c.commitmentStatus === "PENDING_TX_COMMIT"
     );
-    if (hasPending) return "task_pending" as const;
+    if (hasCommitted) return "task_pending" as const;
 
     const hasAccepted = myCommitments.some(c => c.commitmentStatus === "ACCEPTED");
-    if (hasAccepted && !hasClaimed) return "task_accepted" as const;
+    const hasRewarded = myCommitments.some(c => c.commitmentStatus === "REWARDED");
 
-    // After Leave & Claim, suppress stale "enrolled" banner — the contribution cycle is complete.
-    if (hasClaimed) return null;
+    if (hasAccepted) return "task_accepted" as const;
+
+    // All work is claimed and no active commitments — suppress stale banner.
+    if (hasRewarded && !hasAccepted && !hasCommitted) return null;
 
     return "enrolled" as const;
   }, [user?.accessTokenAlias, project, myCommitments]);
@@ -151,14 +152,14 @@ export default function ProjectDetailPage() {
 
   // Use authenticated contributor commitments for completed tasks.
   // project.assessments has empty taskHash (GH #178), making it unreliable.
-  const acceptedTaskHashes = new Set(
+  const completedTaskHashes = new Set(
     myCommitments
-      .filter(c => c.commitmentStatus === "ACCEPTED")
+      .filter(c => c.commitmentStatus === "ACCEPTED" || c.commitmentStatus === "REWARDED")
       .map(c => c.taskHash)
       .filter(Boolean),
   );
   const availableTasks = liveTasks.filter(t => !submittedTaskHashes.has(t.taskHash ?? ""));
-  const completedTasks = liveTasks.filter(t => acceptedTaskHashes.has(t.taskHash ?? ""));
+  const completedTasks = liveTasks.filter(t => completedTaskHashes.has(t.taskHash ?? ""));
 
   // Group tasks by taskHash for display (same content = same hash, shown with count)
   const availableTaskGroups = groupTasksByHash(availableTasks);
@@ -172,6 +173,9 @@ export default function ProjectDetailPage() {
     (sum, f) => sum + (f.lovelaceAmount ?? 0),
     0,
   );
+
+  const treasuryBalance = project.treasuryBalance ?? 0;
+  const budgetSpent = Math.max(0, totalFunding - treasuryBalance);
 
   const availableRewards = availableTasks.reduce(
     (sum, t) => sum + (parseInt(t.lovelaceAmount ?? "0", 10) || 0),
@@ -188,6 +192,7 @@ export default function ProjectDetailPage() {
           <AndamioPageHeader
             title={projectTitle}
             description={project.description || undefined}
+            imageUrl={project.imageUrl ?? ""}
             action={
               isReturningContributor ? (
                 <Link href={`/project/${projectId}/contributor`}>
@@ -208,7 +213,7 @@ export default function ProjectDetailPage() {
 
       {/* ── Contributor Status Bar ──────────────────────────────── */}
       {contributorStatus && (
-        <div className={`rounded-lg border p-4 flex items-center justify-between gap-4 ${
+        <div className={`rounded-sm border p-4 flex items-center justify-between gap-4 ${
           contributorStatus === "task_accepted"
             ? "border-primary/30 bg-primary/5"
             : "border-muted-foreground/20 bg-muted/30"
@@ -248,18 +253,33 @@ export default function ProjectDetailPage() {
       )}
 
       {/* ── Stats Bar ─────────────────────────────────────────────── */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border p-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-sm border p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <TreasuryIcon className="h-4 w-4" />
-            <AndamioText variant="small">Treasury</AndamioText>
+            <AndamioText variant="small">Treasury Balance</AndamioText>
           </div>
           <AndamioText className="text-2xl font-bold">
-            {formatLovelace(totalFunding)}
+            {formatLovelace(treasuryBalance)}
           </AndamioText>
         </div>
 
-        <div className="rounded-lg border p-4">
+        <div className="rounded-sm border p-4">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TreasuryIcon className="h-4 w-4" />
+            <AndamioText variant="small">Budget Spent</AndamioText>
+          </div>
+          <AndamioText className="text-2xl font-bold">
+            {formatLovelace(budgetSpent)}
+          </AndamioText>
+          {totalFunding > 0 && (
+            <AndamioText variant="small" className="text-muted-foreground">
+              {Math.round((budgetSpent / totalFunding) * 100)}% of {formatLovelace(totalFunding)} deposited
+            </AndamioText>
+          )}
+        </div>
+
+        <div className="rounded-sm border p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <TaskIcon className="h-4 w-4" />
             <AndamioText variant="small">Available Rewards</AndamioText>
@@ -272,7 +292,7 @@ export default function ProjectDetailPage() {
           </AndamioText>
         </div>
 
-        <div className="rounded-lg border p-4">
+        <div className="rounded-sm border p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <ContributorIcon className="h-4 w-4" />
             <AndamioText variant="small">Contributors</AndamioText>
@@ -296,7 +316,7 @@ export default function ProjectDetailPage() {
           )}
         </div>
 
-        <div className="rounded-lg border p-4">
+        <div className="rounded-sm border p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <CredentialIcon className="h-4 w-4" />
             <AndamioText variant="small">Credentials Claimed</AndamioText>
@@ -385,6 +405,14 @@ export default function ProjectDetailPage() {
                             <AndamioText variant="small" className="font-mono text-xs text-muted-foreground">
                               {task.taskHash.slice(0, 20)}...
                             </AndamioText>
+                            {task.preAssignedAlias && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <LockedIcon className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">
+                                  @{task.preAssignedAlias}
+                                </span>
+                              </div>
+                            )}
                           </Link>
                         ) : (
                           <AndamioText className="text-muted-foreground">No ID</AndamioText>

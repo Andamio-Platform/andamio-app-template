@@ -294,7 +294,7 @@ export function StepLessons({ config, direction }: StepLessonsProps) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/10 p-3 rounded-lg border border-muted-foreground/20"
+          className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/10 p-3 rounded-sm border border-muted-foreground/20"
         >
           <span>
             Complete the <strong>Assignment</strong> step before writing the introduction.

@@ -122,7 +122,7 @@ function SidebarNavItem({
   const content = (
     <div
       className={cn(
-        "group flex items-center rounded-md transition-colors cursor-pointer select-none",
+        "group flex items-center rounded-md transition-standard cursor-pointer select-none",
         styles.itemPadding,
         styles.fontSize,
         styles.gap,
@@ -174,7 +174,7 @@ function SidebarNavItem({
       {isActive && (
         <NextIcon
           className={cn(
-            "text-primary flex-shrink-0 ml-auto",
+            "text-muted-foreground flex-shrink-0 ml-auto",
             variant === "desktop" ? "h-3 w-3" : "h-4 w-4"
           )}
         />

@@ -16,28 +16,32 @@ import { cn } from "~/lib/utils";
  * ```
  */
 
-const headingVariants = cva("m-0 font-bold tracking-tight leading-none text-foreground", {
-  variants: {
-    size: {
-      "5xl": "text-5xl sm:text-6xl mb-4",
-      "4xl": "text-4xl sm:text-5xl",
-      "3xl": "text-3xl sm:text-4xl",
-      "2xl": "text-2xl sm:text-3xl",
-      xl: "text-xl sm:text-2xl",
-      lg: "text-lg sm:text-xl",
-      base: "text-base sm:text-lg",
+const headingVariants = cva(
+  "m-0 font-bold tracking-tight leading-tight text-foreground",
+  {
+    variants: {
+      size: {
+        "5xl": "text-3xl sm:text-4xl md:text-5xl mb-4",
+        "4xl": "text-2xl sm:text-3xl md:text-4xl",
+        "3xl": "text-3xl sm:text-4xl",
+        "2xl": "text-2xl sm:text-3xl",
+        xl: "text-xl sm:text-2xl",
+        lg: "text-lg sm:text-xl",
+        base: "text-base sm:text-lg",
+      },
+    },
+    defaultVariants: {
+      size: "2xl",
     },
   },
-  defaultVariants: {
-    size: "2xl",
-  },
-});
+);
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface AndamioHeadingProps
-  extends React.HTMLAttributes<HTMLHeadingElement>,
-  VariantProps<typeof headingVariants> {
+  extends
+    React.HTMLAttributes<HTMLHeadingElement>,
+    VariantProps<typeof headingVariants> {
   /**
    * Semantic heading level (h1-h6)
    * @default 2
@@ -45,19 +49,20 @@ export interface AndamioHeadingProps
   level?: HeadingLevel;
 }
 
-const AndamioHeading = React.forwardRef<HTMLHeadingElement, AndamioHeadingProps>(
-  ({ className, level = 2, size, ...props }, ref) => {
-    const Component = `h${level}` as const;
+const AndamioHeading = React.forwardRef<
+  HTMLHeadingElement,
+  AndamioHeadingProps
+>(({ className, level = 2, size, ...props }, ref) => {
+  const Component = `h${level}` as const;
 
-    return (
-      <Component
-        ref={ref}
-        className={cn(headingVariants({ size }), className)}
-        {...props}
-      />
-    );
-  }
-);
+  return (
+    <Component
+      ref={ref}
+      className={cn(headingVariants({ size }), className)}
+      {...props}
+    />
+  );
+});
 
 AndamioHeading.displayName = "AndamioHeading";
 

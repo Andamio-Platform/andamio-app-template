@@ -13,24 +13,22 @@
 
 "use client";
 
-import React from "react";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "./transaction-button";
 import { TransactionStatus } from "./transaction-status";
+import { parseTxErrorMessage } from "~/lib/tx-error-messages";
 import {
   AndamioCard,
   AndamioCardContent,
-  AndamioCardDescription,
   AndamioCardHeader,
-  AndamioCardTitle,
 } from "~/components/andamio/andamio-card";
-import { AndamioBadge } from "~/components/andamio/andamio-badge";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioText } from "~/components/andamio/andamio-text";
-import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { CredentialIcon, ShieldIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
+import { AndamioCardIconHeader } from "~/components/andamio/andamio-card-icon-header";
+import { AndamioConfirmDialog } from "~/components/andamio/andamio-confirm-dialog";
+import { CredentialIcon, LoadingIcon, SuccessIcon } from "~/components/icons";
 import { toast } from "sonner";
 import { TRANSACTION_UI } from "~/config/transaction-ui";
 
@@ -144,51 +142,21 @@ export function CredentialClaim({
 
   return (
     <AndamioCard>
-      <AndamioCardHeader className="pb-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-            <CredentialIcon className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <AndamioCardTitle>{ui.title}</AndamioCardTitle>
-            <AndamioCardDescription>
-              Claim your proof of achievement for this module
-            </AndamioCardDescription>
-          </div>
-        </div>
+      <AndamioCardHeader>
+        <AndamioCardIconHeader
+          icon={CredentialIcon}
+          title={moduleTitle ?? moduleCode}
+          description={courseTitle}
+          iconColor="text-primary"
+        />
       </AndamioCardHeader>
-      <AndamioCardContent className="space-y-4">
-        {/* Credential Info */}
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <AndamioBadge variant="secondary" className="text-xs">
-              {moduleTitle ?? moduleCode}
-            </AndamioBadge>
-            {courseTitle && (
-              <AndamioBadge variant="outline" className="text-xs text-muted-foreground">
-                {courseTitle}
-              </AndamioBadge>
-            )}
-          </div>
-        </div>
-
-        {/* What You're Getting */}
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <ShieldIcon className="h-4 w-4 text-primary" />
-            <AndamioText className="font-medium">Permanent Credential</AndamioText>
-          </div>
-          <AndamioText variant="small" className="text-xs">
-            A permanent, verifiable proof of your achievement stored on the blockchain.
-          </AndamioText>
-        </div>
-
-        {/* Transaction Status - Only show during processing, not when showing gateway confirmation */}
+      <AndamioCardContent>
+        {/* Transaction Status - Only show during processing */}
         {state !== "idle" && !txConfirmed && !(state === "success" && result?.requiresDBUpdate) && (
           <TransactionStatus
             state={state}
             result={result}
-            error={error?.message ?? null}
+            error={parseTxErrorMessage(error?.message)}
             onRetry={() => reset()}
             messages={{
               success: "Transaction submitted! Waiting for confirmation...",
@@ -198,17 +166,17 @@ export function CredentialClaim({
 
         {/* Gateway Confirmation Status */}
         {state === "success" && result?.requiresDBUpdate && !txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div className="flex-1">
-                <AndamioText className="font-medium">Confirming on blockchain...</AndamioText>
-                <AndamioText variant="small" className="text-xs">
+                <span className="font-medium">Confirming on blockchain...</span>
+                <AndamioText variant="small">
                   {txStatus?.state === "pending" && "Waiting for block confirmation"}
                   {txStatus?.state === "confirmed" && "Processing database updates"}
                   {!txStatus && "Registering transaction..."}
                 </AndamioText>
-                <AndamioText variant="small" className="text-xs text-muted-foreground">
+                <AndamioText variant="muted">
                   This usually takes 20–60 seconds.
                 </AndamioText>
               </div>
@@ -218,14 +186,12 @@ export function CredentialClaim({
 
         {/* Success */}
         {txConfirmed && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
               <SuccessIcon className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <AndamioText className="font-medium text-primary">
-                  Credential Claimed!
-                </AndamioText>
-                <AndamioText variant="small" className="text-xs">
+                <span className="font-medium text-primary">Credential Claimed!</span>
+                <AndamioText variant="small">
                   Your credential has been added to your wallet!
                 </AndamioText>
               </div>
@@ -233,9 +199,9 @@ export function CredentialClaim({
           </div>
         )}
 
-        {/* Claim Button - with confirmation since it's an irreversible on-chain action */}
-        {state !== "success" && !txConfirmed && state === "idle" && (
-          <ConfirmDialog
+        {/* Claim Button - confirm dialog provides context before signing (Principle 4) */}
+        {!txConfirmed && state === "idle" && (
+          <AndamioConfirmDialog
             trigger={
               <AndamioButton className="w-full" disabled={!hasAccessToken}>
                 <CredentialIcon className="h-4 w-4 mr-2" />
@@ -243,12 +209,12 @@ export function CredentialClaim({
               </AndamioButton>
             }
             title="Claim Your Credential?"
-            description="This records a permanent credential on-chain as proof of your achievement. This action cannot be undone."
+            description={`This permanently records your completion of "${moduleTitle ?? moduleCode}" as a verifiable credential. This action cannot be undone.`}
             confirmText="Claim Credential"
             onConfirm={handleClaim}
           />
         )}
-        {state !== "success" && !txConfirmed && state !== "idle" && (
+        {!txConfirmed && state !== "idle" && state !== "success" && (
           <TransactionButton
             txState={state}
             onClick={handleClaim}

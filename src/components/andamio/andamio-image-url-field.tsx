@@ -200,7 +200,7 @@ export function AndamioImageUrlField({
         {hasImage ? (
           /* -- With image: aspect-ratio preview -- */
           <div
-            className="relative overflow-hidden rounded-lg border bg-muted/30 cursor-pointer"
+            className="relative overflow-hidden rounded-sm border bg-muted/30 cursor-pointer"
             style={{ aspectRatio }}
             aria-label="Replace cover image"
             {...dropzoneInteractionProps}
@@ -235,7 +235,7 @@ export function AndamioImageUrlField({
           /* -- Empty: dropzone with drag-and-drop -- */
           <div
             className={cn(
-              "flex w-full items-center justify-center rounded-lg border-2 border-dashed bg-muted/30 transition-colors cursor-pointer",
+              "flex w-full items-center justify-center rounded-sm border-2 border-dashed bg-muted/30 transition-colors cursor-pointer",
               isDragOver
                 ? "border-primary bg-primary/5"
                 : "border-border hover:border-primary/40 hover:bg-muted/50",
@@ -258,7 +258,7 @@ export function AndamioImageUrlField({
         ) : (
           /* -- Unauthenticated: static placeholder -- */
           <div
-            className="flex items-center justify-center rounded-lg border border-dashed bg-muted/30"
+            className="flex items-center justify-center rounded-sm border border-dashed bg-muted/30"
             style={{ aspectRatio }}
           >
             <ImagePlaceholderIcon className="h-6 w-6 text-muted-foreground/50" />

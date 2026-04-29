@@ -19,59 +19,44 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import {
+  normalizeCommitmentNetworkStatus,
+  type CommitmentNetworkStatus,
+} from "~/lib/assignment-status";
 import { courseStudentKeys } from "./use-course-student";
+import type { StudentCommitmentSummary } from "./commitment-aggregation";
+// Re-export pure aggregation helpers so existing imports against this module keep working.
+export {
+  getModuleCommitmentStatus,
+  groupCommitmentsByModule,
+} from "./commitment-aggregation";
+export type { StudentCommitmentSummary } from "./commitment-aggregation";
+// Import directly from gateway.ts to avoid circular dependency with ~/types/generated/index.ts
+import type {
+  StudentAssignmentCommitmentItem,
+  StudentAssignmentCommitmentsResponse,
+} from "~/types/generated/gateway";
 
 // =============================================================================
-// Types
+// Status Normalization (canonical — issue #520)
 // =============================================================================
+//
+// Aliases live in `src/lib/assignment-status.ts`. This hook delegates to the
+// canonical normalizer wrapper so PENDING_TX_* values are preserved.
 
-/**
- * App-level student commitment summary with camelCase fields.
- */
-export interface StudentCommitmentSummary {
-  courseId: string;
-  moduleCode: string;
-  sltHash: string | null;
-  networkStatus: string;
-  source: "merged" | "chain_only" | "db_only";
-}
-
-/** Raw API response shape from the commitments list endpoint */
-interface RawStudentCommitment {
-  course_id?: string;
-  course_module_code?: string;
-  slt_hash?: string;
-  on_chain_status?: string;
-  commitment_status?: string;
-  content?: {
-    commitment_status?: string;
-  };
-  source?: string;
-}
-
-// =============================================================================
-// Status Normalization (shared with use-assignment-commitment.ts)
-// =============================================================================
-
-const STATUS_MAP: Record<string, string> = {
-  SUBMITTED: "PENDING_APPROVAL",
-  ACCEPTED: "ASSIGNMENT_ACCEPTED",
-  REFUSED: "ASSIGNMENT_REFUSED",
-  CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
-  LEFT: "NOT_STARTED",
-  AWAITING_SUBMISSION: "IN_PROGRESS",
-  // Legacy aliases (gateway may still send these)
-  APPROVED: "ASSIGNMENT_ACCEPTED",
-  REJECTED: "ASSIGNMENT_REFUSED",
-};
-
-function normalizeStatus(raw: RawStudentCommitment): string {
+function normalizeStatus(
+  raw: StudentAssignmentCommitmentItem,
+): CommitmentNetworkStatus {
+  // Reads nested `content.commitment_status` per the gateway contract.
+  // The `?? "PENDING_APPROVAL"` default synthesizes a status for sparse
+  // responses where neither `commitment_status` nor `on_chain_status` is set.
+  // Load-bearing for UI rendering; parallel hook in use-assignment-commitment.ts
+  // has the same default. TX indexer fallback in src/lib/tx-indexer-fallback.ts
+  // deliberately bypasses this default to distinguish sparse responses from
+  // on-chain PENDING_APPROVAL.
   const rawStatus =
-    raw.commitment_status ??
-    raw.content?.commitment_status ??
-    raw.on_chain_status ??
-    "PENDING_APPROVAL";
-  return STATUS_MAP[rawStatus] ?? rawStatus;
+    raw.content?.commitment_status ?? raw.on_chain_status ?? "PENDING_APPROVAL";
+  return normalizeCommitmentNetworkStatus(rawStatus);
 }
 
 // =============================================================================
@@ -79,9 +64,11 @@ function normalizeStatus(raw: RawStudentCommitment): string {
 // =============================================================================
 
 function transformStudentCommitment(
-  raw: RawStudentCommitment,
+  raw: StudentAssignmentCommitmentItem,
   fallbackCourseId: string,
 ): StudentCommitmentSummary {
+  // Generated type widens `source` to `string`; the equality checks narrow it
+  // to the app's three-value union inside each branch.
   const source =
     raw.source === "chain_only" || raw.source === "db_only"
       ? raw.source
@@ -94,63 +81,6 @@ function transformStudentCommitment(
     networkStatus: normalizeStatus(raw),
     source,
   };
-}
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-/** Status priority: higher index = higher priority */
-const STATUS_PRIORITY: string[] = [
-  "ASSIGNMENT_REFUSED",
-  "IN_PROGRESS",
-  "PENDING_APPROVAL",
-  "ASSIGNMENT_ACCEPTED",
-  "CREDENTIAL_CLAIMED",
-];
-
-/**
- * Derive a single status string for a module from its commitments.
- *
- * Priority (highest wins): ACCEPTED > PENDING_APPROVAL > CONFIRMING > REFUSED
- * Returns null when the array is empty.
- */
-export function getModuleCommitmentStatus(
-  commitments: StudentCommitmentSummary[],
-): string | null {
-  if (commitments.length === 0) return null;
-
-  let best: string | null = null;
-  let bestPriority = -1;
-
-  for (const c of commitments) {
-    const idx = STATUS_PRIORITY.indexOf(c.networkStatus);
-    const priority = idx === -1 ? 0 : idx;
-    if (priority > bestPriority) {
-      bestPriority = priority;
-      best = c.networkStatus;
-    }
-  }
-
-  return best;
-}
-
-/**
- * Group commitments by module code, filtering to a specific course.
- * Prevents cross-course contamination (see #116).
- */
-export function groupCommitmentsByModule(
-  commitments: StudentCommitmentSummary[],
-  courseId: string,
-): Map<string, StudentCommitmentSummary[]> {
-  const map = new Map<string, StudentCommitmentSummary[]>();
-  for (const c of commitments) {
-    if (c.courseId !== courseId) continue;
-    const existing = map.get(c.moduleCode) ?? [];
-    existing.push(c);
-    map.set(c.moduleCode, existing);
-  }
-  return map;
 }
 
 // =============================================================================
@@ -195,12 +125,14 @@ export async function fetchStudentCommitments(
 
   const result: unknown = await response.json();
 
-  let rawCommitments: RawStudentCommitment[];
+  // Expected shape per generated type is `StudentAssignmentCommitmentsResponse`
+  // (`{ data: StudentAssignmentCommitmentItem[], meta? }`). Also tolerate an
+  // array-direct response defensively — the endpoint has historically varied.
+  let rawCommitments: StudentAssignmentCommitmentItem[];
   if (Array.isArray(result)) {
-    rawCommitments = result as RawStudentCommitment[];
+    rawCommitments = result as StudentAssignmentCommitmentItem[];
   } else if (result && typeof result === "object" && "data" in result) {
-    const wrapped = result as {
-      data?: RawStudentCommitment[];
+    const wrapped = result as StudentAssignmentCommitmentsResponse & {
       warning?: string;
     };
     if (wrapped.warning) {

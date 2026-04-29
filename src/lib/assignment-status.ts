@@ -7,6 +7,18 @@ export type AssignmentStatus =
   | "CREDENTIAL_CLAIMED"
   | "UNKNOWN";
 
+/**
+ * Commitment-layer network status.
+ *
+ * Wider than `AssignmentStatus` because the assignment-commitment UI needs to
+ * render a transaction-processing banner while a `PENDING_TX_*` status is
+ * live — that distinction is lost when the base normalizer collapses all
+ * `PENDING_TX_*` to `IN_PROGRESS` for badge display.
+ */
+export type CommitmentNetworkStatus =
+  | AssignmentStatus
+  | `PENDING_TX_${string}`;
+
 const STATUS_ALIASES: Record<string, AssignmentStatus> = {
   NOT_STARTED: "NOT_STARTED",
   IN_PROGRESS: "IN_PROGRESS",
@@ -19,6 +31,13 @@ const STATUS_ALIASES: Record<string, AssignmentStatus> = {
   CREDENTIAL_CLAIMED: "CREDENTIAL_CLAIMED",
   ASSIGNMENT_LEFT: "NOT_STARTED",
   LEFT: "NOT_STARTED",
+  // DB raw commitment_status values (previously inlined in hook STATUS_MAPs)
+  SUBMITTED: "PENDING_APPROVAL",
+  ACCEPTED: "ASSIGNMENT_ACCEPTED",
+  REFUSED: "ASSIGNMENT_DENIED",
+  // Legacy gateway values
+  APPROVED: "ASSIGNMENT_ACCEPTED",
+  REJECTED: "ASSIGNMENT_DENIED",
   // Andamioscan on-chain status values (for source: "chain_only" responses)
   COMPLETED: "CREDENTIAL_CLAIMED",
   CURRENT: "IN_PROGRESS",
@@ -45,6 +64,30 @@ export function normalizeAssignmentStatus(
   }
 
   return "UNKNOWN";
+}
+
+/**
+ * Commitment read-path normalizer.
+ *
+ * Preserves `PENDING_TX_*` values as-is so the assignment-commitment UI can
+ * render a TX-processing banner; delegates to `normalizeAssignmentStatus`
+ * otherwise. Uses `startsWith` (tighter than the base normalizer's `includes`
+ * check) so only raw PENDING_TX-prefixed values are preserved.
+ */
+export function normalizeCommitmentNetworkStatus(
+  rawStatus: string | null | undefined,
+): CommitmentNetworkStatus {
+  if (!rawStatus) return "NOT_STARTED";
+
+  const normalized = rawStatus.toUpperCase();
+
+  if (normalized.startsWith("PENDING_TX_")) {
+    // Cast is sound: `normalized` is the uppercased input and `startsWith`
+    // guarantees the `PENDING_TX_` prefix required by the template literal.
+    return normalized as `PENDING_TX_${string}`;
+  }
+
+  return normalizeAssignmentStatus(normalized);
 }
 
 export function isCompletedStatus(status: AssignmentStatus): boolean {

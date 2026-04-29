@@ -40,6 +40,9 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/no-unsafe-return": "off",
+      // Prevent tabnabbing: any <a target="_blank"> must set rel="noopener noreferrer".
+      // Codebase is already compliant; this rule guards against regression. See issue #510.
+      "react/jsx-no-target-blank": "error",
     },
   },
   {

@@ -1,5 +1,7 @@
 # AGENTS.md - Andamio App Template
 
+> **Audience**: Anyone working in this repo (forkers and the template maintainers alike). Some sections describe Andamio's specific gateway and type-generation pipeline — if you've forked this template and pointed it at a different backend, treat those as guidance rather than rules.
+
 Project instructions for AI coding agents. Works with [Claude Code](https://claude.ai/code), [Cursor](https://cursor.com), [Copilot](https://github.com/features/copilot), [Gemini CLI](https://geminicli.com), and [30+ other compatible agents](https://agentskills.io/home).
 
 ## Project Overview

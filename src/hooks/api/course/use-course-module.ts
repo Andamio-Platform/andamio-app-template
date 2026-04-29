@@ -1068,9 +1068,9 @@ export interface RegisteredModule {
 }
 
 /**
- * WORKAROUND: API spec has recursive bug (RegisterModuleResponse.data: RegisterModuleResponse)
- * These interfaces define the actual shape of the response.
- * TODO: Remove when API spec is fixed (see gateway.ts RegisterModuleResponse)
+ * WORKAROUND: the generated RegisterModuleResponse type is recursive
+ * (`data: RegisterModuleResponse`) and doesn't describe the real payload.
+ * These interfaces describe the actual shape returned by the gateway.
  */
 interface RegisterModuleResponseData {
   course_id?: string;

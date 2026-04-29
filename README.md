@@ -3,7 +3,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
-[![Agent Skills](https://img.shields.io/badge/Agent_Skills-8_skills-8B5CF6)](https://agentskills.io)
+[![Agent Skills](https://img.shields.io/badge/Agent_Skills-6_skills-8B5CF6)](https://agentskills.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 Forkable Cardano dApp starter built on the Andamio Protocol. Course creation, credential issuance, project management, and treasury operations — all on-chain.

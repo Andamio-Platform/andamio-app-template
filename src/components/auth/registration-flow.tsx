@@ -221,7 +221,7 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
 
           <AndamioCardContent className="space-y-3">
             {/* What you're getting */}
-            <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
+            <div className="rounded-sm border bg-muted/30 p-3 space-y-1.5">
               <div className="flex items-center gap-2">
                 <ShieldIcon className="h-4 w-4 text-primary" />
                 <AndamioText className="font-medium text-sm">Your Access Token</AndamioText>
@@ -290,7 +290,7 @@ export function RegistrationFlow({ onMinted, onBack }: RegistrationFlowProps) {
             </AndamioButton>
             <AndamioButton
               variant="outline"
-              onClick={() => void logout()}
+              onClick={() => void logout("registration_cancel")}
               className="w-full"
             >
               Disconnect Wallet

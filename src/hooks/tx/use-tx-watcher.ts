@@ -18,7 +18,7 @@
 
 import type { GatewayTxType } from "~/types/generated";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
-import { withTimeout } from "~/lib/andamio-auth";
+import { withTimeout } from "~/lib/promise-utils";
 
 // =============================================================================
 // Types
@@ -46,6 +46,14 @@ export interface TxStatus {
   confirmed_at?: string;
   retry_count: number;
   last_error?: string;
+  /**
+   * Internal discriminator attached by synthetic-terminal producers in
+   * tx-polling-fallback (e.g., "budget_404"). The watcher store uses it to
+   * route to the indexer fallback before firing handleTerminal; it is
+   * stripped before any rendering or persistence path. Never exposed to UI.
+   * @internal
+   */
+  __reason?: string;
 }
 
 /**
@@ -77,7 +85,8 @@ export async function registerTransaction(
   txHash: string,
   txType: string,
   jwt?: string | null,
-  metadata?: Record<string, string>
+  metadata?: Record<string, string>,
+  diagnosticTag: string = "tx-register-failure",
 ): Promise<void> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -92,8 +101,16 @@ export async function registerTransaction(
     metadata,
   } satisfies TxRegisterRequest);
 
+  // Diagnostic: track whether any fetch was dispatched. If still false after all
+  // catches, the request never left the browser — typically adblocker, CORS, or
+  // a proxy misconfiguration (issue #494 root-cause hypothesis verification).
+  let dispatched = false;
+  let lastErrorName: string | undefined;
+  let lastStatus: number | undefined;
+
   for (let attempt = 0; attempt <= REGISTER_MAX_RETRIES; attempt++) {
     try {
+      dispatched = true;
       const response = await withTimeout(
         fetch(`${GATEWAY_API_BASE}/tx/register`, { method: "POST", headers, body }),
         REGISTER_TIMEOUT_MS,
@@ -102,23 +119,54 @@ export async function registerTransaction(
 
       if (response.ok) return;
 
+      lastStatus = response.status;
+
       // 4xx = permanent failure, don't retry
       if (!RETRYABLE_STATUSES.has(response.status)) {
         const errorText = await response.text();
+        console.warn(`[${diagnosticTag}]`, {
+          txHash,
+          txType,
+          errorName: "HttpError",
+          status: response.status,
+          attempt,
+          dispatched: true,
+        });
         throw new Error(`Failed to register TX: ${response.status} - ${errorText}`);
       }
 
       // 5xx on last attempt = give up
       if (attempt === REGISTER_MAX_RETRIES) {
         const errorText = await response.text();
+        console.warn(`[${diagnosticTag}]`, {
+          txHash,
+          txType,
+          errorName: "HttpError",
+          status: response.status,
+          attempt,
+          dispatched: true,
+        });
         throw new Error(`Failed to register TX: ${response.status} - ${errorText}`);
       }
 
       // 5xx = transient, retry with backoff
       console.warn(`[tx-register] Retry ${attempt + 1}/${REGISTER_MAX_RETRIES} after ${response.status}`);
     } catch (error) {
+      if (error instanceof Error) {
+        lastErrorName = error.name;
+      }
       // Timeout or network error on last attempt — give up
-      if (attempt === REGISTER_MAX_RETRIES) throw error;
+      if (attempt === REGISTER_MAX_RETRIES) {
+        console.warn(`[${diagnosticTag}]`, {
+          txHash,
+          txType,
+          errorName: lastErrorName,
+          status: lastStatus,
+          attempt,
+          dispatched,
+        });
+        throw error;
+      }
       console.warn(`[tx-register] Retry ${attempt + 1}/${REGISTER_MAX_RETRIES} after error:`, error);
     }
 
@@ -136,7 +184,7 @@ export async function registerTransaction(
  *
  * The gateway uses a specific set of tx_type values defined in the API spec.
  * @see GatewayTxType for valid values
- * @see https://preprod.api.andamio.io/api/v1/docs/ for API docs
+ * @see https://dev-api.andamio.io/api/v1/docs/ for API docs
  */
 export const TX_TYPE_MAP: Record<string, GatewayTxType> = {
   // Global

@@ -33,7 +33,7 @@ export function AndamioAuthButton() {
   } = useAndamioAuth();
 
   const handleLogout = React.useCallback(() => {
-    logout();
+    logout("sign_out");
     router.push("/");
   }, [logout, router]);
 

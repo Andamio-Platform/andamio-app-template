@@ -4,19 +4,20 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useWallet } from "@meshsdk/react";
 import {
   authenticateWithWallet,
-  withTimeout,
   storeJWT,
   getStoredJWT,
   clearStoredJWT,
   isJWTExpired,
   type AuthUser,
 } from "~/lib/andamio-auth";
-import { extractAliasFromUnit } from "~/lib/access-token-utils";
+import { withTimeout } from "~/lib/promise-utils";
+import { extractAliasFromUnit, stringToHex } from "~/lib/access-token-utils";
 import { authLogger } from "~/lib/debug-logger";
 import { parseAuthErrorMessage } from "~/lib/auth-error-messages";
 import { env } from "~/env";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
 import { getWalletAddressBech32 } from "~/lib/wallet-address";
+import { pendingProject } from "~/lib/pending-project";
 
 /**
  * Detect and sync access token from wallet to database
@@ -134,10 +135,23 @@ interface AndamioAuthContextType {
 
   // Actions
   authenticate: () => Promise<void>;
-  logout: () => void;
+  logout: (reason: LogoutReason) => void;
   refreshAuth: () => void;
   authenticatedFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
+
+/**
+ * Reasons logout() can be invoked. Required at every call site so we can
+ * distinguish user-initiated sign-out from automatic disconnects in the
+ * field. Tracked under the JWT-expiry-wallet-disconnect investigation
+ * (docs/plans/2026-04-28-002-fix-jwt-expiry-wallet-disconnect-plan.md, Unit A0).
+ */
+export type LogoutReason =
+  | "sign_out"            // user clicked Sign Out
+  | "jwt_expired"         // authenticatedFetch detected expired JWT (bug under investigation)
+  | "wallet_switch"       // wallet-switch detection fired
+  | "registration_cancel" // user cancelled registration flow
+  | "access_token_mint";  // auto-logout after minting access token (forces wallet reconnect with new JWT)
 
 const AndamioAuthContext = createContext<AndamioAuthContextType | undefined>(undefined);
 
@@ -366,8 +380,8 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       );
 
       if (!bech32Address || bech32Address.length < 10) {
-        console.error("Invalid address from wallet:", bech32Address);
-        throw new Error(`Invalid wallet address: ${bech32Address || "(empty)"}`);
+        authLogger.error("Invalid wallet address received (length check failed)");
+        throw new Error("Invalid wallet address received from wallet");
       }
 
       // Debug logging
@@ -384,7 +398,9 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
 
           // Mesh SDK v2: signData(address: string, payload: string)
           // Note: address comes FIRST, payload second (swapped from v1)
-          const signature = await wallet.signData(bech32Address, nonce);
+          // CIP-30 requires hex-encoded payload - see GitHub issue #394
+          const nonceHex = stringToHex(nonce);
+          const signature = await wallet.signData(bech32Address, nonceHex);
           return signature;
         },
         address: bech32Address, // Always send bech32 to the API
@@ -438,13 +454,24 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   /**
    * Logout and clear auth state
    * Also disconnects the wallet to complete the logout flow
+   *
+   * The `reason` parameter is required for instrumentation — see
+   * docs/plans/2026-04-28-002-fix-jwt-expiry-wallet-disconnect-plan.md
+   * Unit A0. We need to distinguish user-initiated sign-out from
+   * automatic disconnects in field reports.
    */
-  const logout = useCallback(() => {
+  const logout = useCallback((reason: LogoutReason) => {
+    // authLogger.error (not .warn) is intentional: only `error` is unconditional
+    // in debug-logger.ts; `warn` is gated behind NEXT_PUBLIC_DEBUG_LOGGING and
+    // would be silent in production, defeating the A0 spike's purpose.
+    authLogger.error("[logout] fired", { reason });
     clearStoredJWT();
     setJwt(null);
     setUser(null);
     setIsAuthenticated(false);
     setAuthError(null);
+    // Clear pending project creation state
+    pendingProject.clear();
     // Disconnect the wallet as well
     disconnectWallet();
   }, [disconnectWallet]);
@@ -475,7 +502,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
           authLogger.info("Logging out user due to wallet switch");
 
           // Log out the user to prevent session issues
-          logout();
+          logout("wallet_switch");
         }
       } catch (error) {
         authLogger.error("Error checking wallet address during switch detection:", error);
@@ -553,7 +580,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       }
 
       if (isJWTExpired(jwt)) {
-        logout();
+        logout("jwt_expired");
         throw new Error("JWT expired, please re-authenticate");
       }
 
@@ -603,7 +630,7 @@ const defaultContextValue: AndamioAuthContextType = {
   authenticate: async () => {
     console.warn("[Auth] Provider not loaded yet");
   },
-  logout: () => {
+  logout: (_reason: LogoutReason) => {
     console.warn("[Auth] Provider not loaded yet");
   },
   refreshAuth: () => {

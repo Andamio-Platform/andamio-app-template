@@ -79,7 +79,7 @@ export function FirstLoginCard({
           // Show celebration for 2 seconds, then auto-logout
           setTimeout(() => {
             setHasLoggedOut(true);
-            logout();
+            logout("access_token_mint");
           }, 2000);
         }
       },
@@ -247,7 +247,7 @@ export function FirstLoginCard({
       <AndamioCardContent className="space-y-5">
         {/* TX confirmation status */}
         {!txConfirmed && !txFailed && (
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-sm border bg-muted/30 p-4">
             <div className="flex items-center justify-center gap-3">
               <LoadingIcon className="h-5 w-5 animate-spin text-secondary" />
               <div>
@@ -303,7 +303,7 @@ export function FirstLoginCard({
 
         {/* The ceremony — shown once TX is confirmed, auto-transitions after 2 seconds */}
         {txConfirmed && (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 text-center space-y-3">
+          <div className="rounded-sm border border-primary/20 bg-primary/5 p-5 text-center space-y-3">
             <AndamioText className="font-semibold text-lg">
               Welcome to Andamio!
             </AndamioText>

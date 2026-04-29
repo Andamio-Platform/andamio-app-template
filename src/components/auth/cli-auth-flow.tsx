@@ -3,7 +3,8 @@
 import React from "react";
 import { useSearchParams } from "next/navigation";
 import { useWallet } from "@meshsdk/react";
-import { authenticateWithWallet, withTimeout, type AuthResponse } from "~/lib/andamio-auth";
+import { authenticateWithWallet, type AuthResponse } from "~/lib/andamio-auth";
+import { withTimeout } from "~/lib/promise-utils";
 import { getWalletAddressBech32 } from "~/lib/wallet-address";
 import { stringToHex } from "~/lib/access-token-utils";
 import { authLogger } from "~/lib/debug-logger";
@@ -338,7 +339,7 @@ export function CliAuthFlow() {
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border/50 bg-muted">
+            <div className="flex h-10 w-10 items-center justify-center rounded-sm border border-border/50 bg-muted">
               <TerminalIcon className="h-5 w-5 text-foreground" />
             </div>
             <div>
@@ -366,7 +367,7 @@ export function CliAuthFlow() {
                 </AndamioCardDescription>
               </AndamioCardHeader>
               <AndamioCardContent>
-                <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                <div className="rounded-sm border bg-muted/30 p-4 space-y-2">
                   <AndamioText variant="small" className="font-medium">
                     How to fix
                   </AndamioText>
@@ -406,7 +407,7 @@ export function CliAuthFlow() {
               </AndamioCardHeader>
               <AndamioCardContent className="space-y-4">
                 {/* Permissions info */}
-                <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                <div className="rounded-sm border bg-muted/30 p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <ShieldIcon className="h-4 w-4 text-muted-foreground" />
                     <AndamioText variant="small" className="font-medium">
@@ -490,7 +491,7 @@ export function CliAuthFlow() {
               </AndamioCardHeader>
               {authResult.user.accessTokenAlias && (
                 <AndamioCardContent>
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-center">
+                  <div className="rounded-sm border border-primary/20 bg-primary/5 p-4 text-center">
                     <AndamioText
                       variant="small"
                       className="text-muted-foreground"
@@ -521,7 +522,7 @@ export function CliAuthFlow() {
                 </AndamioCardDescription>
               </AndamioCardHeader>
               <AndamioCardContent className="space-y-4">
-                <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                <div className="rounded-sm border bg-muted/30 p-4 space-y-2">
                   <AndamioText variant="small" className="font-medium">
                     What to do next
                   </AndamioText>

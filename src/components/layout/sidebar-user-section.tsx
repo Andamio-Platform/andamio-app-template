@@ -59,7 +59,7 @@ export function SidebarUserSection({
   const isExpanded = variant === "expanded";
 
   const handleDisconnect = () => {
-    logout();
+    logout("sign_out");
     onDisconnect?.();
     // Redirect to home so next user sees proper onboarding
     router.push("/");

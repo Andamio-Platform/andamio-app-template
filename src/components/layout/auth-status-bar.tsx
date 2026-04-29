@@ -50,7 +50,7 @@ export function AuthStatusBar() {
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
   const handleLogout = useCallback(() => {
-    logout();
+    logout("sign_out");
     router.push("/");
   }, [logout, router]);
 

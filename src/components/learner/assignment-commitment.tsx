@@ -579,6 +579,12 @@ export function AssignmentCommitment({
                                 evidence: JSON.stringify(evidenceContent),
                                 evidence_hash: hash,
                               },
+                              recoveryContext: {
+                                kind: "course_assignment",
+                                courseId,
+                                moduleCode,
+                                sltHash,
+                              },
                               onSuccess: () => {
                                 setHasUnsavedChanges(false);
                               },

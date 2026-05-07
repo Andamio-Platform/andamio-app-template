@@ -3,6 +3,8 @@
  *
  * React Query mutation hook for uploading images to storage.
  * Used by Tiptap editor and cover image forms.
+ *
+ * @see docs/plans/2026-02-27-feat-tiptap-image-upload-plan.md
  */
 
 import { useMutation } from "@tanstack/react-query";

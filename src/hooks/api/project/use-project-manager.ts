@@ -338,12 +338,13 @@ export function useManagerProjects() {
  * Uses merged endpoint: POST /api/v2/project/manager/commitments/list
  * Returns pending task submissions awaiting assessment.
  *
- * @param projectId - Optional project ID to filter commitments
+ * @param projectId - Required project ID to scope the query.
+ *   Gateway returns 400 if project_id is empty/missing (andamio-api#373).
  *
  * @example
  * ```tsx
- * function PendingReviews() {
- *   const { data: commitments, isLoading, error, refetch } = useManagerCommitments();
+ * function PendingReviews({ projectId }: { projectId: string }) {
+ *   const { data: commitments, isLoading, error } = useManagerCommitments(projectId);
  *
  *   if (isLoading) return <Skeleton />;
  *   if (error) return <ErrorAlert message={error.message} />;
@@ -354,7 +355,7 @@ export function useManagerProjects() {
  * ```
  */
 export function useManagerCommitments(
-  projectId?: string,
+  projectId: string,
   options?: { enabled?: boolean }
 ) {
   const { isAuthenticated, authenticatedFetch } = useAndamioAuth();
@@ -368,7 +369,7 @@ export function useManagerCommitments(
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(projectId ? { project_id: projectId } : {}),
+          body: JSON.stringify({ project_id: projectId }),
         }
       );
 

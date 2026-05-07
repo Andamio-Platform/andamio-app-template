@@ -31,24 +31,7 @@ import type {
 import type { JSONContent } from "@tiptap/core";
 import { courseKeys } from "./use-course";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
-
-// =============================================================================
-// Type Guard
-// =============================================================================
-
-/**
- * Type guard for Tiptap JSONContent.
- * Validates that the value is an object with a string `type` field,
- * which is the minimum shape for valid Tiptap content.
- */
-export function isJSONContent(value: unknown): value is JSONContent {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    typeof (value as Record<string, unknown>).type === "string"
-  );
-}
+import { isJSONContent } from "~/lib/assignment-status";
 
 // =============================================================================
 // App-Level Types (exported for components)
@@ -1068,9 +1051,9 @@ export interface RegisteredModule {
 }
 
 /**
- * WORKAROUND: the generated RegisterModuleResponse type is recursive
- * (`data: RegisterModuleResponse`) and doesn't describe the real payload.
- * These interfaces describe the actual shape returned by the gateway.
+ * WORKAROUND: API spec has recursive bug (RegisterModuleResponse.data: RegisterModuleResponse)
+ * These interfaces define the actual shape of the response.
+ * TODO: Remove when API spec is fixed (see gateway.ts RegisterModuleResponse)
  */
 interface RegisterModuleResponseData {
   course_id?: string;

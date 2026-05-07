@@ -158,6 +158,8 @@ export {
 export {
   useStudentCredentials,
   studentCredentialKeys,
+  hasClaimedModuleCredential,
+  deriveModuleCompleted,
   type StudentCourseCredential,
   type CredentialModuleInfo,
 } from "./course/use-student-credentials";
@@ -256,7 +258,10 @@ export {
 } from "./use-dashboard";
 
 // =============================================================================
-// Image Upload Hook
+// Image Upload Hooks
 // =============================================================================
 
-export { useImageUpload, type ImageUploadResult } from "./use-image-upload";
+export {
+  useImageUpload,
+  type ImageUploadResult,
+} from "./use-image-upload";

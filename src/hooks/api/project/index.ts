@@ -21,3 +21,5 @@ export * from "./use-project";
 export * from "./use-project-owner";
 export * from "./use-project-contributor";
 export * from "./use-project-manager";
+export * from "./use-qualified-contributors";
+export * from "./use-treasury-report";

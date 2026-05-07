@@ -208,6 +208,19 @@ export type {
   RotateAPIKeyResponse,
 } from "./gateway";
 
+// =============================================================================
+// Developer Auth Types (CIP-30 secure login + refresh tokens, v2.3)
+// =============================================================================
+
+export type {
+  LoginCompleteRequest,
+  LoginSessionRequest,
+  LoginSessionResponse,
+  RefreshRequest,
+  RefreshTokenData,
+  SecureLoginResponse,
+} from "./gateway";
+
 // Developer profile type (returned from /v2/apikey/developer/profile/get)
 export type { MeResponse as DeveloperProfileResponse } from "./gateway";
 

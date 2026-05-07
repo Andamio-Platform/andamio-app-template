@@ -5,3 +5,4 @@
  * uses React Context for global state management.
  */
 export { useAndamioAuth } from "~/contexts/andamio-auth-context";
+export type { LogoutReason } from "~/lib/andamio-auth";

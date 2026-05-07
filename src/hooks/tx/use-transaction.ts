@@ -143,11 +143,16 @@ export interface SimpleTransactionConfig<T extends TransactionType> {
   /** Optional metadata for TX registration (e.g., course title for instance creation) */
   metadata?: Record<string, string>;
   /**
-   * Optional typed entity context used by the indexer-fallback path when polling
-   * times out. Supply for TX types whose commitment state is queryable via a GET
-   * endpoint (currently: PROJECT_CONTRIBUTOR_TASK_COMMIT, COURSE_STUDENT_ASSIGNMENT_COMMIT).
+   * Optional typed entity context. Two consumers read it: the indexer-fallback
+   * path on polling timeout, and the R5 precision filter in
+   * `assignment-tx-filter.ts`. Supply for:
+   * - PROJECT_CONTRIBUTOR_TASK_COMMIT — fallback resolves via contributor commitment GET
+   * - COURSE_STUDENT_ASSIGNMENT_COMMIT — fallback resolves via assignment commitment GET
+   * - COURSE_STUDENT_CREDENTIAL_CLAIM — no fallback resolver (on-chain credential token
+   *   is authoritative); required for the R5 strip-pulse precision filter
    * The `kind` must match the `txType` — mismatches are logged and the context is dropped.
    * @see src/types/tx-recovery.ts
+   * @see src/lib/assignment-tx-filter.ts
    */
   recoveryContext?: TxRecoveryContext;
 }

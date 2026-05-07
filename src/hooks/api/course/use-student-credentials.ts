@@ -26,6 +26,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { GATEWAY_API_BASE } from "~/lib/api-utils";
+import {
+  isCompletedStatus,
+  normalizeAssignmentStatus,
+} from "~/lib/assignment-status";
 import type {
   StudentCredentialsResponse,
   StudentCourseCredential as ApiStudentCourseCredential,
@@ -71,6 +75,58 @@ export const studentCredentialKeys = {
   all: [...courseStudentKeys.all, "credentials"] as const,
   list: () => [...studentCredentialKeys.all, "list"] as const,
 };
+
+// =============================================================================
+// Pure helpers
+// =============================================================================
+
+/**
+ * True iff `claimedCredentials` for `courseId` contains the `sltHash` of the
+ * given `moduleCode`. Per-module signal: never substitute a course-level field
+ * here — see the regression test `does not leak across modules in the same
+ * course` in `use-student-credentials.test.ts`.
+ *
+ * Assumes `sltHash` is unique within a course's modules. The transform layer
+ * does not enforce this; if a future API regression returns duplicate hashes
+ * across modules of one course, the helper returns true for *any* module that
+ * shares the claimed hash. The same-hash regression test pins this contract.
+ */
+export function hasClaimedModuleCredential(
+  credentials: StudentCourseCredential[],
+  courseId: string,
+  moduleCode: string,
+): boolean {
+  const courseCredential = credentials.find((c) => c.courseId === courseId);
+  if (!courseCredential || courseCredential.claimedCredentials.length === 0) {
+    return false;
+  }
+  return courseCredential.modules.some(
+    (m) =>
+      m.courseModuleCode === moduleCode &&
+      m.sltHash !== "" &&
+      courseCredential.claimedCredentials.includes(m.sltHash),
+  );
+}
+
+/**
+ * True iff the learner has fully completed `(courseId, moduleCode)` on-chain.
+ * Both halves are required: (a) the commitment lifecycle has reached an
+ * accepted/claimed state per `isCompletedStatus`, AND (b) the on-chain
+ * credential for *this* module has been claimed. The status check goes
+ * through `normalizeAssignmentStatus` so raw gateway values (`COMPLETED`,
+ * `APPROVED`, etc.) collapse to the canonical set.
+ */
+export function deriveModuleCompleted(
+  networkStatus: string | null | undefined,
+  credentials: StudentCourseCredential[],
+  courseId: string,
+  moduleCode: string,
+): boolean {
+  if (!isCompletedStatus(normalizeAssignmentStatus(networkStatus))) {
+    return false;
+  }
+  return hasClaimedModuleCredential(credentials, courseId, moduleCode);
+}
 
 // =============================================================================
 // Transform

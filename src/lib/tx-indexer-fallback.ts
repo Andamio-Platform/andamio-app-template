@@ -272,6 +272,13 @@ export function runIndexerFallback(
         txHash,
         authenticatedFetch,
       );
+    case "course_credential_claim":
+      // No fallback resolver: the on-chain credential token is authoritative,
+      // and the variant lacks the per-module identifier a list-endpoint
+      // resolver would need to disambiguate. On budget_404 the polling layer's
+      // synthetic terminal fires `failed` (never `updated`), so no false
+      // success can result.
+      return Promise.resolve({ kind: "unresolved" });
     default: {
       // Exhaustiveness check — if a new TxRecoveryContext variant is added
       // without extending this switch, TypeScript will flag the assignment.

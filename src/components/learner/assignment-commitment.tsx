@@ -12,7 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAssignmentCommitment, useSubmitEvidence } from "~/hooks/api/course";
 import { courseStudentKeys, useStudentCourses } from "~/hooks/api/course/use-course-student";
 import { useCourse } from "~/hooks/api/course/use-course";
-import { isJSONContent } from "~/hooks/api/course/use-course-module";
+import { isJSONContent } from "~/lib/assignment-status";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { AndamioLabel } from "~/components/andamio/andamio-label";
 import { AndamioCard, AndamioCardContent, AndamioCardDescription, AndamioCardHeader, AndamioCardTitle } from "~/components/andamio/andamio-card";

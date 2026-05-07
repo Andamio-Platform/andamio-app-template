@@ -1,3 +1,19 @@
+import type { JSONContent } from "@tiptap/core";
+
+/**
+ * Type guard for Tiptap JSONContent.
+ * Validates that the value is an object with a string `type` field,
+ * which is the minimum shape for valid Tiptap content.
+ */
+export function isJSONContent(value: unknown): value is JSONContent {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    typeof (value as Record<string, unknown>).type === "string"
+  );
+}
+
 export type AssignmentStatus =
   | "NOT_STARTED"
   | "IN_PROGRESS"

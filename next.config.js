@@ -8,8 +8,10 @@ import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
-// Read version from VERSION file (single source of truth)
-const appVersion = readFileSync("VERSION", "utf-8").trim();
+// Read version from package.json (single source of truth)
+const { version: appVersion } = JSON.parse(
+  readFileSync("package.json", "utf-8"),
+);
 
 // Get short git commit hash
 let gitCommit = "unknown";

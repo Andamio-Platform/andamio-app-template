@@ -1,13 +1,13 @@
 ---
 name: transactions
-description: How Cardano transactions work in Andamio — state machine, APIs, and hooks.
+description: How Cardano transactions work in this template — the state machine, APIs, and hooks you'll reuse for every TX you build.
 ---
 
 # Transactions
 
-Build, submit, and track Cardano transactions in Andamio apps.
+Build, submit, and track Cardano transactions in your app. This skill explains the state machine the template uses for every transaction, and points you at the hooks and config files you'll edit when adding your own TX types.
 
-**Docs**: [docs.andamio.io](https://docs.andamio.io) | **API**: [preprod.api.andamio.io](https://preprod.api.andamio.io)
+**Reference**: [docs.andamio.io](https://docs.andamio.io) | **Default gateway**: `https://preprod.api.andamio.io`
 
 ## The State Machine
 
@@ -108,25 +108,32 @@ const { status, isSuccess } = useTxWatcher(txHash, {
 
 ## TX Types
 
-| Action | tx_type |
-|--------|---------|
-| Mint access token | `access_token_mint` |
-| Create course | `course_create` |
-| Submit assignment | `assignment_submit` |
-| Assess assignment | `assessment_assess` |
-| Claim credential | `credential_claim` |
-| Create project | `project_create` |
-| Commit to task | `project_join` |
-| Submit task work | `task_submit` |
-| Assess task | `task_assess` |
-| Fund treasury | `treasury_fund` |
+The full union lives in `src/config/transaction-ui.ts` as `TransactionType`. Names follow `NAMESPACE_ROLE_ACTION`:
 
-## What to Build Next
+| Namespace | Role | Examples |
+|-----------|------|----------|
+| `GLOBAL_*` | — | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT`, `GLOBAL_USER_ACCESS_TOKEN_CLAIM` |
+| `INSTANCE_*` | — | `INSTANCE_COURSE_CREATE`, `INSTANCE_PROJECT_CREATE` |
+| `COURSE_*` | OWNER / TEACHER / STUDENT | `COURSE_TEACHER_ASSIGNMENTS_ASSESS`, `COURSE_STUDENT_CREDENTIAL_CLAIM` |
+| `PROJECT_*` | OWNER / MANAGER / CONTRIBUTOR / USER | `PROJECT_CONTRIBUTOR_TASK_COMMIT`, `PROJECT_MANAGER_TASKS_ASSESS`, `PROJECT_USER_TREASURY_ADD_FUNDS` |
 
-| Challenge | Description |
-|-----------|-------------|
-| `/tx-challenge` | 4 progressive challenges — from status display to full TX flow |
-| `/task-lifecycle` | Walk through commit → submit → assess on preprod |
+For the canonical list, open `src/config/transaction-ui.ts` and read the `TransactionType` union — it's the source of truth.
+
+## Adding Your Own TX Type
+
+To add a new transaction (e.g., `MY_APP_ACTION`):
+
+1. **Type union**: add the new TX type to the `TransactionType` union in `src/config/transaction-ui.ts` and to `TRANSACTION_UI` (UI metadata) and `TRANSACTION_ENDPOINTS` (backend route).
+2. **Backend**: expose a build endpoint at the URL you registered, returning unsigned CBOR. The template uses `/api/v2/tx/*` against the Andamio gateway — point at your own backend if you've forked.
+3. **Schema**: add a Zod schema in `src/config/transaction-schemas.ts` for the request/response payload.
+4. **Trigger**: call `useTransaction()` from a component, passing your new `TransactionType` and payload.
+5. **Track**: wrap the result with `useTxStream()` so the UI waits for `"updated"` before refetching data.
+
+The state machine, retry logic, and SSE plumbing are all reusable — you only write the type-specific schema and the build endpoint on the backend.
+
+## Related Skills
+
+- `/task-lifecycle` — see the state machine in action across a 4-step contributor flow
 
 ## Key Files
 
@@ -161,7 +168,3 @@ The Gateway handles DB updates automatically. Just wait for `"updated"` status.
 ### SSE connections can drop
 
 The `useTxStream` hook handles reconnection, but if you're building custom TX tracking, implement fallback to polling via `useTxWatcher`.
-
----
-
-**Last Updated**: March 2026

@@ -229,9 +229,46 @@ export const metadata = getPageMetadata("Courses", "Browse available courses");
 
 ## FAQ
 
-### Q: Do I need to rename Andamio* components?
+### Q: Should I rename the `Andamio*` components?
 
-**A:** No. These are semantic names for the design system (like "Bootstrap" components). You can keep them or rename if doing a complete rebrand. The component prefix doesn't appear in the UI.
+**A:** Optional. The prefix doesn't appear in the UI, so leaving it costs you nothing visible. Rename when you want your codebase to *feel* like your app rather than a fork — typically when you're handing the project off to a team.
+
+The wrappers live in `src/components/andamio/` and are referenced ~200 times across the codebase. Two safe ways to rename them:
+
+**Option A — IDE rename (recommended).** Open `src/components/andamio/index.ts`, then for each exported wrapper name (`AndamioButton`, `AndamioCard`, etc.) right-click → *Rename Symbol* (F2 in VS Code). TypeScript updates every import site automatically. Slow but airtight.
+
+**Option B — scoped sed.** Faster, but read the guards carefully and run `npm run check` after.
+
+```bash
+# 1. Rename the wrapper exports in src/components/andamio/ itself.
+#    Scoped to that one folder, so nothing else can be touched.
+find src/components/andamio -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i '' 's/Andamio\([A-Z]\)/App\1/g' {} +
+
+# 2. Update import sites across the rest of src/.
+#    Two guards: skip generated types (regenerated from API spec on next sync),
+#    and skip lines containing `useAndamioAuth` (the auth hook is intentionally
+#    gateway-named — renaming it has nothing to do with white-labeling the UI).
+find src -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -not -path 'src/types/generated/*' \
+  -exec sed -i '' '/useAndamioAuth/!s/Andamio\([A-Z]\)/App\1/g' {} +
+
+# 3. Optional — rename the folder too.
+git mv src/components/andamio src/components/app
+find src -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -not -path 'src/types/generated/*' \
+  -exec sed -i '' 's|components/andamio|components/app|g' {} +
+
+# 4. Verify nothing broke.
+npm run check
+```
+
+**Notes on the guards**:
+- The lowercase `andamio-` in `@andamio/core`, `@andamio/datum-utils`, and `andamio-auth.ts` is naturally skipped because the regex starts with capital `A`.
+- `useAndamioAuth` would otherwise match (the `A` in `Auth` satisfies `[A-Z]`), so it's excluded by the `!` line filter — leaving the auth hook untouched.
+- `src/types/generated/` is regenerated from the OpenAPI spec, so any rename inside would be silently undone on the next `npm run generate:types`.
+
+**Cross-platform**: `sed -i ''` is BSD/macOS syntax. On Linux/WSL drop the empty string: `sed -i 's/...'`.
 
 ### Q: Can I use a different backend?
 
@@ -315,7 +352,6 @@ Then check `isFeatureEnabled("projects")` in your components.
 | Protocol doc comments | Developer reference for understanding code |
 | Generated type names | Auto-generated from API spec |
 | Andamioscan links | Protocol-specific blockchain explorer |
-| `Andamio*` component names | Design system lineage |
 
 ---
 

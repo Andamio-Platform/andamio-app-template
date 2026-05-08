@@ -1,7 +1,6 @@
 {
   "name": "andamio-app-template",
   "version": "2.2.0",
-  "apiVersion": "2.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,15 +16,7 @@
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test:unit": "SKIP_ENV_VALIDATION=true find src -name '*.test.ts' -exec tsx --test {} +",
-    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
-    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
-    "test:e2e:debug": "playwright test --config=e2e/playwright.config.ts --debug",
-    "test:e2e:chromium": "playwright test --config=e2e/playwright.config.ts --project=chromium",
-    "test:e2e:mobile": "playwright test --config=e2e/playwright.config.ts --project=mobile",
-    "test:e2e:a11y": "playwright test --config=e2e/playwright.config.ts --project=accessibility",
-    "test:e2e:report": "playwright show-report e2e/reports/html",
-    "test:e2e:pr": "playwright test --config=e2e/playwright.config.ts --project=chromium e2e/tests/pr/"
+    "test:unit": "SKIP_ENV_VALIDATION=true find src \\( -name '*.test.ts' -o -name '*.test.tsx' \\) -exec tsx --test {} +"
   },
   "dependencies": {
     "@andamio/core": "^0.3.1",
@@ -121,7 +112,6 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@playwright/test": "^1.58.1",
     "@tailwindcss/postcss": "^4.0.15",
     "@types/node": "^25.0.0",
     "@types/react": "^19.2.13",

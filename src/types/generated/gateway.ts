@@ -2034,6 +2034,12 @@ export interface PublishModuleV2Request {
 export interface QualifiedContributorsResponse {
   aliases?: string[];
   project_id?: string;
+  /**
+   * Status indicates the reason for an empty aliases list.
+   * "ok" — prerequisites are configured and the intersection was computed.
+   * "no_prerequisites_configured" — the project has no prerequisites on-chain; every alias is vacuously qualified.
+   */
+  status?: string;
   total_count?: number;
   truncated?: boolean;
 }

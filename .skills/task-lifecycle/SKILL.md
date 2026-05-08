@@ -1,11 +1,11 @@
 ---
 name: task-lifecycle
-description: Walk through the full task lifecycle — commit, submit, review, assess — with a working preprod example.
+description: How the contributor task flow works in this template — commit, submit, review, assess — and where to extend it for your own app.
 ---
 
 # Task Lifecycle
 
-Hands-on walkthrough of the Andamio task state machine. By the end, you'll have executed (or understood) every transaction in the task flow.
+The template ships a 4-step contributor flow built on Cardano transactions. This skill explains the state machine, points at the hooks and routes that implement it, and shows how to adapt the pattern for your own task flows.
 
 ## The Flow
 
@@ -28,21 +28,7 @@ Hands-on walkthrough of the Andamio task state machine. By the end, you'll have 
 
 ## Instructions
 
-### 1. Check Prerequisites
-
-Before running transactions on preprod, verify:
-
-```bash
-# Check environment
-echo $NEXT_PUBLIC_CARDANO_NETWORK  # Should be "preprod"
-```
-
-The developer needs:
-- Wallet connected with preprod ADA
-- Access token minted (run `/getting-started` first if not)
-- A project with open tasks (check `/project` page)
-
-### 2. Understand the State Machine
+### 1. Understand the State Machine
 
 Each transaction moves the task through states:
 
@@ -53,60 +39,50 @@ Each transaction moves the task through states:
 | Assess (approve) | `task_assess` | submitted | approved | Manager |
 | Assess (reject) | `task_assess` | submitted | rejected | Manager |
 
-### 3. Walk Through the Code
+### 2. Walk Through the Code
 
-Show the developer the key files:
+The implementation lives in three layers:
 
-**Transaction Hooks** (`src/hooks/api/project/`):
+**Transaction hooks** (`src/hooks/api/project/`):
 - `use-project-contributor.ts` — commit and submit transactions
 - `use-project-manager.ts` — assess transactions
 
-**State Tracking** (`src/stores/`):
-- `tx-watcher-store.ts` — global transaction watcher
+**State tracking** (`src/stores/tx-watcher-store.ts`) — global watcher that tracks every in-flight TX through `pending → confirmed → updated`.
 
-**Types** (`src/types/`):
-- `transaction.ts` — state machine types
+**Types** (`src/types/transaction.ts`) — state machine type definitions.
 
-### 4. Try It (Demo Mode)
+### 3. What Happens on Commit
 
-If they want to run a real transaction:
-
-1. Navigate to `/project` and find a project with open tasks
-2. Click on a task to view details
-3. Click "Commit to Task" — this builds and submits the commit TX
-4. Watch the TX state machine: `pending → confirmed → updated`
-5. Once `updated`, the task shows as "committed" in their dashboard
-
-**Key insight**: "confirmed" means on-chain, but `updated` means the DB synced. Always wait for `updated` before refetching data.
-
-### 5. Explain What Happened
-
-After the commit transaction:
+Step-by-step, when a contributor clicks "Commit to Task":
 
 ```
-1. Frontend called POST /api/v2/tx/project/commit
-2. Gateway built unsigned CBOR with contributor's stake locked
-3. Wallet signed the transaction
-4. Wallet submitted to blockchain
-5. Frontend registered TX with POST /api/v2/tx/register
-6. SSE stream or polling watched for confirmation
-7. Gateway updated database ~30s after on-chain confirmation
-8. UI received "updated" state and refreshed
+1. Frontend calls POST /api/v2/tx/project/commit
+2. Gateway builds unsigned CBOR with contributor's stake locked
+3. Wallet signs the transaction
+4. Wallet submits to blockchain
+5. Frontend registers TX with POST /api/v2/tx/register
+6. SSE stream or polling watches for confirmation
+7. Gateway updates database ~30s after on-chain confirmation
+8. UI receives "updated" state and refreshes
 ```
 
-### 6. Continue the Flow (Optional)
+**Key insight**: `confirmed` means on-chain, but `updated` means the DB synced. Always wait for `updated` before refetching data.
 
-If they want to complete the full lifecycle:
+### 4. Where the Routes Live
 
-**Submit work:**
-```
-/project/{projectId}/{taskHash} → "Submit Work" button
-```
+| Step | Route | Who |
+|------|-------|-----|
+| Commit / Submit | `/project/{projectId}/{taskHash}` | Contributor |
+| Review / Assess | `/studio/project/{projectId}/commitments` | Manager |
 
-**Assess (requires manager role):**
-```
-/studio/project/{projectId}/commitments → Review pending submissions
-```
+### 5. Adapting This for Your App
+
+If your app has its own task or contribution flow:
+
+- Reuse the state machine and watcher store as-is — they're not specific to Andamio's task model.
+- Replace the `tx_type` values (`project_join`, `task_submit`, `task_assess`) with your own in `src/config/transaction-ui.ts` and `transaction-schemas.ts`.
+- Swap the `/api/v2/tx/project/*` endpoints for whatever your backend exposes.
+- See `/transactions` for the underlying TX hook patterns you'll reuse for every TX you add.
 
 ## Key Files
 
@@ -140,12 +116,7 @@ Cardano transactions have a 2-hour TTL. If the user waits too long to sign, rebu
 
 The contributor is missing required SLTs. Check the task's `requiredCredentials` against the user's credentials.
 
-## Next Steps
+## Related Skills
 
-- `/transactions` — deeper dive into TX state machine internals
-- `/design-system` — understand the UI patterns used in task pages
-- Check `e2e/tests/projects/task-commitment-flow.spec.ts` for automated test coverage
-
----
-
-**Last Updated**: March 2026
+- `/transactions` — deeper dive into the TX state machine, hooks, and how to add your own TX types
+- `/design-system` — UI patterns used on task and project pages

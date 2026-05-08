@@ -1,7 +1,6 @@
 #!/bin/bash
 # Generate TypeScript types from the Andamio Gateway OpenAPI spec.
-# Updates apiVersion in package.json (app version is stamped separately by stamp-version.sh).
-# Also captures API spec metadata for traceability.
+# Captures API spec metadata in src/types/generated/api-metadata.json for traceability.
 
 set -e
 
@@ -23,15 +22,13 @@ npx swagger-typescript-api generate \
 # This enables TypeScript compile-time checking on generated API types
 sed -i '' 's|// @ts-nocheck|// TypeScript checking enabled - API types are compile-time safe|' "${OUTPUT_DIR}/gateway.ts"
 
-# Fetch API metadata, sync version to VERSION + package.json
+# Save API metadata for traceability
 node -e "
   fetch('${SPEC_URL}')
     .then(r => r.json())
     .then(spec => {
       const fs = require('fs');
       const apiVersion = spec.info?.version ?? 'unknown';
-
-      // --- Save metadata ---
       const meta = {
         api_version: apiVersion,
         api_title: spec.info?.title ?? 'unknown',
@@ -42,14 +39,6 @@ node -e "
       };
       fs.writeFileSync('${METADATA_FILE}', JSON.stringify(meta, null, 2) + '\n');
       console.log('API metadata:', JSON.stringify(meta, null, 2));
-
-      // --- Sync apiVersion only (app version is managed by stamp-version.sh) ---
-      const pkgPath = 'package.json';
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-      const oldApiVersion = pkg.apiVersion;
-      pkg.apiVersion = apiVersion;
-      fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
-      console.log('package.json apiVersion: ' + (oldApiVersion ?? 'unset') + ' -> ' + apiVersion);
     })
     .catch(err => {
       console.error('ERROR: Could not fetch API metadata:', err.message);
@@ -59,4 +48,3 @@ node -e "
 
 echo ""
 echo "Types generated in ${OUTPUT_DIR}/gateway.ts"
-echo "API version synced to package.json"

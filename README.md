@@ -39,6 +39,7 @@ NEXT_PUBLIC_CARDANO_NETWORK="preprod"
 | `npm run dev` | Dev server with Turbopack |
 | `npm run build` | Production build |
 | `npm run check` | Lint + typecheck |
+| `npm run test:unit` | Run unit tests (`*.test.ts`/`*.test.tsx` under `src/`) |
 | `npm run generate:types` | Regenerate API types from gateway spec |
 | `npm run preview` | Build + start locally |
 

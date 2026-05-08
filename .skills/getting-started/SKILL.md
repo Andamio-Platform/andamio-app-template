@@ -128,10 +128,9 @@ Affected: buttons, links, focus rings, sidebar highlights,
 > |------|-----|
 > | Full color system | Change `--success`, `--warning`, `--info`, `--destructive` in globals.css |
 > | Component patterns | Run `/design-system` for the full design reference |
-> | Authentication | Run `/auth` to learn API keys and JWT login |
 > | Cardano transactions | Run `/transactions` for the TX state machine |
-> | Fix a bug | Run `/fix` with an issue number or description |
-> | Ship your changes | Run `/ship` to commit, PR, and merge |
+> | Adapt the contributor flow | Run `/task-lifecycle` to see commit → submit → review → assess |
+> | White-label the app | See `docs/WHITE_LABEL_GUIDE.md` for branding, copy, and component renames |
 >
 > Each of these is a **skill** — a set of instructions any coding agent can follow.
 > Learn more at [agentskills.io](https://agentskills.io).
@@ -166,7 +165,3 @@ Pick a preset or tell me your brand color:
 | Sunset | Warm, vibrant |
 
 Or give me a hex code, color name, or just say "surprise me".
-
----
-
-**Last Updated**: March 2026

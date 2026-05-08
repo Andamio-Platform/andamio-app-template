@@ -108,27 +108,25 @@ const { status, isSuccess } = useTxWatcher(txHash, {
 
 ## TX Types
 
-| Action | tx_type |
-|--------|---------|
-| Mint access token | `access_token_mint` |
-| Create course | `course_create` |
-| Submit assignment | `assignment_submit` |
-| Assess assignment | `assessment_assess` |
-| Claim credential | `credential_claim` |
-| Create project | `project_create` |
-| Commit to task | `project_join` |
-| Submit task work | `task_submit` |
-| Assess task | `task_assess` |
-| Fund treasury | `treasury_fund` |
+The full union lives in `src/config/transaction-ui.ts` as `TransactionType`. Names follow `NAMESPACE_ROLE_ACTION`:
+
+| Namespace | Role | Examples |
+|-----------|------|----------|
+| `GLOBAL_*` | — | `GLOBAL_GENERAL_ACCESS_TOKEN_MINT`, `GLOBAL_USER_ACCESS_TOKEN_CLAIM` |
+| `INSTANCE_*` | — | `INSTANCE_COURSE_CREATE`, `INSTANCE_PROJECT_CREATE` |
+| `COURSE_*` | OWNER / TEACHER / STUDENT | `COURSE_TEACHER_ASSIGNMENTS_ASSESS`, `COURSE_STUDENT_CREDENTIAL_CLAIM` |
+| `PROJECT_*` | OWNER / MANAGER / CONTRIBUTOR / USER | `PROJECT_CONTRIBUTOR_TASK_COMMIT`, `PROJECT_MANAGER_TASKS_ASSESS`, `PROJECT_USER_TREASURY_ADD_FUNDS` |
+
+For the canonical list, open `src/config/transaction-ui.ts` and read the `TransactionType` union — it's the source of truth.
 
 ## Adding Your Own TX Type
 
-To add a new transaction (e.g., `my_app_action`):
+To add a new transaction (e.g., `MY_APP_ACTION`):
 
-1. **Backend**: expose a build endpoint that returns unsigned CBOR. The template uses `/api/v2/tx/*` against the Andamio gateway — point this at your own backend if you've forked.
-2. **Schema**: add a Zod schema in `src/config/transaction-schemas.ts` for the request/response payload.
-3. **Registry**: register the TX type and endpoint in `src/config/transaction-ui.ts`.
-4. **Trigger**: call `useTransaction()` from a component, passing your `tx_type` and payload.
+1. **Type union**: add the new TX type to the `TransactionType` union in `src/config/transaction-ui.ts` and to `TRANSACTION_UI` (UI metadata) and `TRANSACTION_ENDPOINTS` (backend route).
+2. **Backend**: expose a build endpoint at the URL you registered, returning unsigned CBOR. The template uses `/api/v2/tx/*` against the Andamio gateway — point at your own backend if you've forked.
+3. **Schema**: add a Zod schema in `src/config/transaction-schemas.ts` for the request/response payload.
+4. **Trigger**: call `useTransaction()` from a component, passing your new `TransactionType` and payload.
 5. **Track**: wrap the result with `useTxStream()` so the UI waits for `"updated"` before refetching data.
 
 The state machine, retry logic, and SSE plumbing are all reusable — you only write the type-specific schema and the build endpoint on the backend.

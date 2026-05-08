@@ -1,15 +1,11 @@
-import { FlatCompat } from "@eslint/eslintrc";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import tseslint from "typescript-eslint";
-
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname,
-});
 
 export default tseslint.config(
   {
-    ignores: [".next"],
+    ignores: [".next", "node_modules", "next-env.d.ts"],
   },
-  ...compat.extends("next/core-web-vitals"),
+  ...nextCoreWebVitals,
   {
     files: ["**/*.ts", "**/*.tsx"],
     extends: [
@@ -28,6 +24,13 @@ export default tseslint.config(
         "warn",
         { argsIgnorePattern: "^_" },
       ],
+      // Empty arrow functions are a legitimate pattern for default/no-op callbacks
+      // (e.g., `onChange = () => {}`, `.catch(() => {})`). Empty function declarations
+      // and methods usually signal forgotten implementation and stay flagged.
+      "@typescript-eslint/no-empty-function": [
+        "error",
+        { allow: ["arrowFunctions"] },
+      ],
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/no-misused-promises": [
         "error",
@@ -43,6 +46,14 @@ export default tseslint.config(
       // Prevent tabnabbing: any <a target="_blank"> must set rel="noopener noreferrer".
       // Codebase is already compliant; this rule guards against regression. See issue #510.
       "react/jsx-no-target-blank": "error",
+      // React Compiler advisory rules (introduced in eslint-plugin-react-hooks v6).
+      // These flag patterns that block compiler memoization — useful guidance, but
+      // they don't represent bugs and we don't auto-rewrite components for them
+      // in this template. Demoted to warn so forkers see the hints without CI breaking.
+      "react-hooks/refs": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/purity": "warn",
     },
   },
   {
@@ -56,6 +67,14 @@ export default tseslint.config(
       "@typescript-eslint/consistent-indexed-object-style": "off",
       "@typescript-eslint/restrict-template-expressions": "off",
       "@typescript-eslint/consistent-type-imports": "off",
+    },
+  },
+  {
+    // Tests use node:test, where describe()/it() return promises by protocol —
+    // you don't await them at the call site, so no-floating-promises misfires.
+    files: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "@typescript-eslint/no-floating-promises": "off",
     },
   },
   {

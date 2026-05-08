@@ -86,7 +86,7 @@ export async function registerTransaction(
   txType: string,
   jwt?: string | null,
   metadata?: Record<string, string>,
-  diagnosticTag: string = "tx-register-failure",
+  diagnosticTag = "tx-register-failure",
 ): Promise<void> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

@@ -109,7 +109,7 @@ export function ProjectCredentialClaim({
 
           toast.success(hasRewards ? "Rewards Claimed!" : "Credentials Claimed!", {
             description: hasRewards
-              ? `You've left the project and claimed ${formatLovelace(pendingRewardLovelace!)} + your credential`
+              ? `You've left the project and claimed ${formatLovelace(pendingRewardLovelace)} + your credential`
               : projectTitle
                 ? `You've earned your credentials from ${projectTitle}`
                 : "Your project credentials have been minted",
@@ -168,7 +168,7 @@ export function ProjectCredentialClaim({
           icon={CredentialIcon}
           title={projectTitle ?? "Project Credentials"}
           description={hasRewards
-            ? `Leave project and claim ${formatLovelace(pendingRewardLovelace!)}`
+            ? `Leave project and claim ${formatLovelace(pendingRewardLovelace)}`
             : undefined}
           iconColor="text-primary"
         />
@@ -179,7 +179,7 @@ export function ProjectCredentialClaim({
           <div className="flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/5 px-4 py-3">
             <TreasuryIcon className="h-4 w-4 shrink-0 text-primary" />
             <span className="text-sm font-medium">Pending Rewards:</span>
-            <span className="text-sm font-bold text-primary">{formatLovelace(pendingRewardLovelace!)}</span>
+            <span className="text-sm font-bold text-primary">{formatLovelace(pendingRewardLovelace)}</span>
           </div>
         )}
 
@@ -227,7 +227,7 @@ export function ProjectCredentialClaim({
                 </span>
                 <AndamioText variant="small">
                   {hasRewards
-                    ? `${formatLovelace(pendingRewardLovelace!)} sent to your wallet`
+                    ? `${formatLovelace(pendingRewardLovelace)} sent to your wallet`
                     : "Your credential has been recorded on-chain"}
                 </AndamioText>
               </div>

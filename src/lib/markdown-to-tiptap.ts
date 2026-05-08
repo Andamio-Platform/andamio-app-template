@@ -366,17 +366,17 @@ function transformContent(
 
       case "table": {
         // Convert GFM table to Tiptap table
-        const tableNode = node as Table;
+        const tableNode = node;
         const tableRows: JSONContent[] = [];
 
         for (let rowIndex = 0; rowIndex < tableNode.children.length; rowIndex++) {
-          const row = tableNode.children[rowIndex] as TableRow;
-          if (!row || row.type !== "tableRow") continue;
+          const row = tableNode.children[rowIndex]!;
+          if (row?.type !== "tableRow") continue;
 
           const cells: JSONContent[] = [];
           for (let cellIndex = 0; cellIndex < row.children.length; cellIndex++) {
-            const cell = row.children[cellIndex] as TableCell;
-            if (!cell || cell.type !== "tableCell") continue;
+            const cell = row.children[cellIndex]!;
+            if (cell?.type !== "tableCell") continue;
 
             // First row cells are headers
             const cellType = rowIndex === 0 ? "tableHeader" : "tableCell";
@@ -474,7 +474,7 @@ export function markdownToTipTap(
   imageUrlMap?: Map<string, string>
 ): JSONContent {
   // Handle empty or whitespace-only input
-  if (!markdown || !markdown.trim()) {
+  if (!markdown?.trim()) {
     return {
       type: "doc",
       content: [],
@@ -501,7 +501,7 @@ export function markdownToTipTap(
  * @returns true if the markdown contains actual content
  */
 export function hasMarkdownContent(markdown: string): boolean {
-  if (!markdown || !markdown.trim()) {
+  if (!markdown?.trim()) {
     return false;
   }
 

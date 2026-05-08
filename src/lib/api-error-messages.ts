@@ -155,7 +155,7 @@ function extractStatusCode(error: unknown): number | null {
   }
   if (error instanceof Error) {
     // Try to extract from message like "Gateway API error: 403"
-    const match = error.message.match(/\b(4\d{2}|5\d{2})\b/);
+    const match = /\b(4\d{2}|5\d{2})\b/.exec(error.message);
     if (match?.[1]) {
       return parseInt(match[1], 10);
     }

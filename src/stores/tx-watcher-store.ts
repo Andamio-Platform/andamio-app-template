@@ -281,7 +281,7 @@ function handleTerminal(
   // Only fire terminal toast if no component is currently mounted and
   // handling it. When subscriberCount > 0, the component fires its own toast.
   const currentEntry = get().transactions.get(txHash);
-  if (currentEntry && currentEntry.subscriberCount === 0) {
+  if (currentEntry?.subscriberCount === 0) {
     if (finalStatus.state === "updated") {
       toast.success(entry.toastConfig.successTitle, {
         description: entry.toastConfig.successDescription,

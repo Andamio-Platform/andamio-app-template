@@ -79,8 +79,8 @@ describe("tx-polling-fallback / pollUntilTerminal", () => {
     );
     // Sanity-check the exact sentence anchors so the user-facing copy can't
     // silently regress to a stack trace or technical noise.
-    assert.match(result!.last_error!, /can't find this transaction/i);
-    assert.match(result!.last_error!, /reload/i);
+    assert.match(result.last_error!, /can't find this transaction/i);
+    assert.match(result.last_error!, /reload/i);
     // The same status object is forwarded to onComplete and returned.
     assert.equal(result, onCompleteCalls[0]);
   });
@@ -130,7 +130,7 @@ describe("tx-polling-fallback / pollUntilTerminal", () => {
     // Generic timeout terminal — NOT the budget_404 sentinel.
     assert.notEqual(result?.__reason, BUDGET_404_REASON);
     assert.equal(result?.__reason, undefined);
-    assert.match(result!.last_error!, /timed out/i);
+    assert.match(result.last_error!, /timed out/i);
   });
 
   it("abort signal mid-404 loop returns null and does NOT fire onComplete (no synthetic terminal)", async () => {

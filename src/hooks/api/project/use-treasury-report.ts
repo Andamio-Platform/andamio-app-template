@@ -103,7 +103,7 @@ export function computeTreasuryReport(
   const submitterSlotByTask = new Map<string, number>();
   for (const s of scopedSubmissions) {
     if (!s.taskHash || !s.submittedBy) continue;
-    const slot = s.slot as number;
+    const slot = s.slot!;
     const existingSlot = submitterSlotByTask.get(s.taskHash);
     if (existingSlot == null || slot > existingSlot) {
       submitterByTask.set(s.taskHash, s.submittedBy);

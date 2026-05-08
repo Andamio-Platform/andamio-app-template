@@ -148,7 +148,7 @@ export function parseOutline(content: string): ParsedOutline {
 
     // Parse code from "code: VALUE" line (case-insensitive)
     if (!code) {
-      const codeMatch = trimmed.match(/^code:\s*(.+)$/i);
+      const codeMatch = /^code:\s*(.+)$/i.exec(trimmed);
       if (codeMatch?.[1]) {
         code = codeMatch[1].trim();
         continue;
@@ -170,14 +170,14 @@ export function parseOutline(content: string): ParsedOutline {
     // Parse numbered list items in SLTs section
     if (inSltsSection) {
       // Match numbered list: "1. Text", "2. Text", etc.
-      const listMatch = trimmed.match(/^\d+\.\s+(.+)$/);
+      const listMatch = /^\d+\.\s+(.+)$/.exec(trimmed);
       if (listMatch?.[1]) {
         slts.push(listMatch[1].trim());
         continue;
       }
 
       // Also support bullet lists: "- Text", "* Text"
-      const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
+      const bulletMatch = /^[-*]\s+(.+)$/.exec(trimmed);
       if (bulletMatch?.[1]) {
         slts.push(bulletMatch[1].trim());
         continue;
@@ -268,7 +268,7 @@ export function parseContentSection(
  */
 export function parseLesson(content: string, filename: string): ParsedLesson {
   // Extract SLT index from filename: lesson-1.md → 1
-  const indexMatch = filename.match(/lesson-(\d+)\.md$/i);
+  const indexMatch = /lesson-(\d+)\.md$/i.exec(filename);
   if (!indexMatch?.[1]) {
     throw new ImportParseError(
       `Invalid lesson filename format. Expected "lesson-N.md" where N is a number.`,

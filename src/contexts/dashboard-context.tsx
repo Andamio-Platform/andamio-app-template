@@ -82,7 +82,7 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     teacher: dashboard?.teacher,
     projects: dashboard?.projects,
     isLoading,
-    error: error as Error | null,
+    error: error,
     refetch: () => void refetch(),
     warning: dashboard?.warning,
   };

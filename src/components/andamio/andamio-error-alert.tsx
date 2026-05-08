@@ -16,7 +16,7 @@ export interface AndamioErrorAlertProps {
    * Can be a pre-parsed string, an Error object, GatewayError, or any unknown error.
    * Will be automatically parsed into a user-friendly message.
    */
-  error: string | Error | unknown;
+  error: unknown;
   /** Optional title override (default: "Error") */
   title?: string;
   /** Optional retry handler - only shown for retryable errors */

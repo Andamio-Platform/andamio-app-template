@@ -23,7 +23,7 @@ export function withTimeout<T>(
       },
       (e: unknown) => {
         clearTimeout(timer);
-        reject(e);
+        reject(e instanceof Error ? e : new Error(String(e)));
       },
     );
   });

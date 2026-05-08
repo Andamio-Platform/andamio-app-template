@@ -84,7 +84,7 @@ export function ManagersManage({
   const { status: txStatus, isSuccess: txConfirmed, isFailed: txFailed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
-      onComplete: async (status) => {
+      onComplete: (status) => {
         if (status.state === "updated") {
           toast.success("Team Updated!", {
             description: "Project managers have been updated.",

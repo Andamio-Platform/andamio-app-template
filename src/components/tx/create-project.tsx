@@ -352,7 +352,7 @@ export function CreateProject({ onSuccess, onConfirmed, initialTitle, onCreateCo
                 <ChecklistStep
                   step={1}
                   title="Owner"
-                  status={user.accessTokenAlias!}
+                  status={user.accessTokenAlias}
                 >
                   <code className="rounded bg-muted px-2 py-1 font-mono text-sm text-foreground">
                     {user.accessTokenAlias}

@@ -68,7 +68,7 @@ export function TeachersUpdate({
   const { status: txStatus, isSuccess: txConfirmed, isFailed: txFailed } = useTxStream(
     result?.requiresDBUpdate ? result.txHash : null,
     {
-      onComplete: async (status) => {
+      onComplete: (status) => {
         if (status.state === "updated") {
           toast.success("Teachers Updated!", {
             description: "Course teachers have been updated.",

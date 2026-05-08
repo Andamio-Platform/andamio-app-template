@@ -77,7 +77,7 @@ export function parseTxErrorMessage(raw: string | null | undefined): string | nu
   let extractedMessage: string | null = null;
 
   try {
-    const jsonMatch = raw.match(/\{.*\}/s);
+    const jsonMatch = /\{.*\}/s.exec(raw);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
 

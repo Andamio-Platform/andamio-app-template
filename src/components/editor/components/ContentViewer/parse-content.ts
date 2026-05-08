@@ -22,8 +22,8 @@ export function parseContent(
 
   if (typeof content === "object") {
     // Doc-typed content passes through unchanged.
-    if ((content as JSONContent).type === "doc") {
-      return content as JSONContent;
+    if ((content).type === "doc") {
+      return content;
     }
     // Any other object (including arrays and untyped nodes) is wrapped in
     // a doc. This preserves pre-refactor behavior so Tiptap's schema —
@@ -32,7 +32,7 @@ export function parseContent(
       type: "doc",
       content: Array.isArray(content)
         ? (content as JSONContent[])
-        : [content as JSONContent],
+        : [content],
     };
   }
 

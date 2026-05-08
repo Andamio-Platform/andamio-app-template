@@ -135,7 +135,7 @@ describe("tx-watcher-store", () => {
 
       const entry = txWatcherStore.getState().getWatchedTx(txHash);
       assert.ok(entry, "entry should exist");
-      assert.deepEqual(entry!.recoveryContext, PROJECT_RECOVERY);
+      assert.deepEqual(entry.recoveryContext, PROJECT_RECOVERY);
 
       // Cleanup: abort the in-flight fetch so the SSE/polling task ends.
       txWatcherStore.getState().clearAll();
@@ -149,7 +149,7 @@ describe("tx-watcher-store", () => {
 
       const entry = txWatcherStore.getState().getWatchedTx(txHash);
       assert.ok(entry);
-      assert.equal(entry!.recoveryContext, undefined);
+      assert.equal(entry.recoveryContext, undefined);
       txWatcherStore.getState().clearAll();
     });
   });
@@ -164,10 +164,10 @@ describe("tx-watcher-store", () => {
 
       const entry = getEntry(txHash);
       assert.ok(entry);
-      assert.equal(entry!.isTerminal, true);
-      assert.equal(entry!.status?.__reason, undefined);
-      assert.equal(entry!.status?.state, "failed");
-      assert.equal(entry!.status?.last_error, status.last_error);
+      assert.equal(entry.isTerminal, true);
+      assert.equal(entry.status?.__reason, undefined);
+      assert.equal(entry.status?.state, "failed");
+      assert.equal(entry.status?.last_error, status.last_error);
     });
 
     it("idempotency — second handleTerminal call for the same txHash is suppressed", () => {
@@ -212,7 +212,9 @@ describe("tx-watcher-store", () => {
       // commitment endpoint. Match submission_tx + COMMITTED → resolved(updated).
       const fetchCalls: string[] = [];
       globalThis.fetch = async (url: RequestInfo | URL) => {
-        fetchCalls.push(String(url));
+        fetchCalls.push(
+          typeof url === "string" ? url : url instanceof URL ? url.href : url.url,
+        );
         return jsonResponse({
           data: {
             submission_tx: txHash,
@@ -233,9 +235,9 @@ describe("tx-watcher-store", () => {
 
       const entry = getEntry(txHash);
       assert.ok(entry);
-      assert.equal(entry!.isTerminal, true);
-      assert.equal(entry!.status?.state, "updated");
-      assert.equal(entry!.status?.__reason, undefined);
+      assert.equal(entry.isTerminal, true);
+      assert.equal(entry.status?.state, "updated");
+      assert.equal(entry.status?.__reason, undefined);
     });
 
     it("budget_404 + no recoveryContext → indexer skipped; handleTerminal fires with sanitized original status", async () => {
@@ -264,7 +266,7 @@ describe("tx-watcher-store", () => {
       assert.equal(entry!.status?.state, "failed");
       assert.equal(entry!.status?.__reason, undefined);
       // Last_error preserved (sanitized = same body, minus __reason).
-      assert.match(entry!.status!.last_error!, /can't find this transaction/i);
+      assert.match(entry!.status.last_error!, /can't find this transaction/i);
     });
 
     it("indexer returns unresolved → handleTerminal fires with the original (sanitized) budget_404 status", async () => {
@@ -287,7 +289,7 @@ describe("tx-watcher-store", () => {
       assert.equal(entry!.isTerminal, true);
       assert.equal(entry!.status?.state, "failed");
       assert.equal(entry!.status?.__reason, undefined);
-      assert.match(entry!.status!.last_error!, /can't find this transaction/i);
+      assert.match(entry!.status.last_error!, /can't find this transaction/i);
     });
 
     it("JWT rotated between register() and the polling terminal → fallback skipped (no fetch); handleTerminal fires with sanitized synthetic status", async () => {

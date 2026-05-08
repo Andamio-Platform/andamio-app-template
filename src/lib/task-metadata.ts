@@ -48,7 +48,7 @@ export function setPreAssignment(
 
   if (trimmed) {
     doc._metadata = {
-      ...(doc._metadata as TaskMetadata | undefined),
+      ...(doc._metadata),
       preAssignment: { alias: trimmed },
     };
   } else {

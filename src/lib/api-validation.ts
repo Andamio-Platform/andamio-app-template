@@ -10,7 +10,7 @@
  * @see ~/types/errors.ts - ParsedError interface
  */
 
-import { ZodError, type ZodSchema } from "zod";
+import { type ZodError, type ZodSchema } from "zod";
 import type { ParsedError } from "~/types/errors";
 
 /**

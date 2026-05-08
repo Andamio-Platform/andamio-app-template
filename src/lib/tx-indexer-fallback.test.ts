@@ -346,7 +346,7 @@ describe("tx-indexer-fallback", () => {
       // the type check.
       const fetcher = async () => emptyResponse(404);
       const result = await runIndexerFallback(
-        fake as TxRecoveryContext,
+        fake,
         TX_HASH,
         fetcher,
       );

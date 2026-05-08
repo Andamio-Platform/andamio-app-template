@@ -107,7 +107,7 @@ export function computeTreasurySummary(
   deposits: DepositEvent[],
   payouts: PayoutEvent[],
   contributorAliases: string[],
-  tasksPending: number = 0,
+  tasksPending = 0,
 ): TreasuryReportSummary {
   const totalDeposited = deposits.reduce((sum, d) => sum + d.lovelace, 0);
   const rewardsDistributed = payouts.reduce((sum, p) => sum + p.lovelace, 0);

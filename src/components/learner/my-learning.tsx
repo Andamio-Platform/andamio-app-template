@@ -86,18 +86,7 @@ function EnrolledCourseCard({ course }: { course: DisplayCourse }) {
 export function MyLearning() {
   const { isAuthenticated, user } = useAndamioAuth();
   const dashboardData = useOptionalDashboardData();
-
-  // Not authenticated or no access token
-  if (!isAuthenticated || !user?.accessTokenAlias) {
-    return null;
-  }
-
-  // Not inside DashboardProvider - don't render
-  if (!dashboardData) {
-    return null;
-  }
-
-  const { student, isLoading, error } = dashboardData;
+  const student = dashboardData?.student;
 
   // Compute claimable credentials per course:
   // commitments with ASSIGNMENT_ACCEPTED that aren't yet in credentialsByCourse
@@ -123,6 +112,18 @@ export function MyLearning() {
 
     return lookup;
   }, [student?.commitments, student?.credentialsByCourse]);
+
+  // Not authenticated or no access token
+  if (!isAuthenticated || !user?.accessTokenAlias) {
+    return null;
+  }
+
+  // Not inside DashboardProvider - don't render
+  if (!dashboardData) {
+    return null;
+  }
+
+  const { isLoading, error } = dashboardData;
 
   // Loading state
   if (isLoading) {

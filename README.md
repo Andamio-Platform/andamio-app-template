@@ -3,7 +3,6 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
-[![Agent Skills](https://img.shields.io/badge/Agent_Skills-6_skills-8B5CF6)](https://agentskills.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 Forkable Cardano dApp starter built on the Andamio Protocol. Course creation, credential issuance, project management, and treasury operations — all on-chain.
@@ -59,10 +58,10 @@ NEXT_PUBLIC_CARDANO_NETWORK="preprod"
 ```
 andamio-app-template/
 ├── .skills/                    # Agent Skills (works with 30+ coding agents)
-│   ├── getting-started/        # Quick onboarding
-│   ├── auth/                   # Authentication guide
-│   ├── transactions/           # TX state machine
-│   └── ...                     # More skills
+│   ├── getting-started/        # Customize the theme in 2 minutes
+│   ├── design-system/          # UI patterns and styling
+│   ├── transactions/           # Cardano TX state machine
+│   └── task-lifecycle/         # Commit → submit → review → assess
 │
 ├── src/
 │   ├── app/
@@ -214,14 +213,10 @@ This template includes [Agent Skills](https://agentskills.io) — portable instr
 
 ```
 .skills/
-├── getting-started/   # Quick onboarding (start here!)
-├── auth/              # API keys and JWT authentication
-├── transactions/      # Cardano TX state machine
-├── tx-challenge/      # 4 progressive TX challenges
-├── task-lifecycle/    # Commit → submit → assess flow
-├── design-system/     # UI patterns and styling
-├── fix/               # AI-assisted bug fixing
-└── ship/              # Commit, PR, merge workflow
+├── getting-started/   # Customize the theme in 2 minutes (start here)
+├── design-system/     # UI patterns, components, styling
+├── transactions/      # Cardano TX state machine, hooks, and APIs
+└── task-lifecycle/    # Commit → submit → review → assess on-chain
 ```
 
 ### Get Started
@@ -229,25 +224,15 @@ This template includes [Agent Skills](https://agentskills.io) — portable instr
 1. Fork this repo
 2. Open with your AI coding agent ([Claude Code](https://claude.ai/code), [Cursor](https://cursor.com), [Copilot](https://github.com/features/copilot), [Gemini CLI](https://geminicli.com), or [others](https://agentskills.io/home))
 3. Run `/getting-started` — you'll customize the theme and see hot reload in 2 minutes
-4. Follow the learning path: `/auth` → `/transactions` → `/tx-challenge`
 
-### Learning Path
-
-| Skill | What you'll learn |
-|-------|-------------------|
-| `/getting-started` | Quick win: customize theme colors in 2 minutes |
-| `/auth` | API keys for devs, JWTs for end users |
-| `/transactions` | Cardano TX state machine and hooks |
-| `/tx-challenge` | Learn by building — 4 progressive TX challenges |
-| `/task-lifecycle` | Hands-on commit → submit → assess on preprod |
-
-### Reference Skills
+### Skills
 
 | Skill | What it does |
-|-------|-------------|
+|-------|--------------|
+| `/getting-started` | Customize theme colors in 2 minutes |
 | `/design-system` | UI patterns, component reference, styling audits |
-| `/fix` | AI-assisted bug fixing |
-| `/ship` | Version bump, commit, PR, merge |
+| `/transactions` | Cardano TX state machine, hooks, and APIs |
+| `/task-lifecycle` | Hands-on commit → submit → review → assess flow |
 
 ### How It Works
 

@@ -229,9 +229,32 @@ export const metadata = getPageMetadata("Courses", "Browse available courses");
 
 ## FAQ
 
-### Q: Do I need to rename Andamio* components?
+### Q: Should I rename the `Andamio*` components?
 
-**A:** No. These are semantic names for the design system (like "Bootstrap" components). You can keep them or rename if doing a complete rebrand. The component prefix doesn't appear in the UI.
+**A:** Optional. The prefix doesn't appear in the UI, so leaving it costs you nothing visible. Rename when you want your codebase to *feel* like your app rather than a fork — typically when you're handing the project off to a team.
+
+The wrappers live in `src/components/andamio/` and are referenced ~200 times across the codebase. Two safe ways to rename them:
+
+**Option A — IDE rename (recommended).** Open `src/components/andamio/index.ts`, then for each exported wrapper name (`AndamioButton`, `AndamioCard`, etc.) right-click → *Rename Symbol* (F2 in VS Code). TypeScript updates every import site automatically. Slow but airtight.
+
+**Option B — scoped sed.** Faster, but verify with `npm run check` after:
+
+```bash
+# 1. Rename the wrapper prefix in wrapper files and their import sites.
+#    The [A-Z] guard skips matches like `andamio-auth` or `@andamio/core`.
+find src -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i '' 's/Andamio\([A-Z]\)/App\1/g' {} +
+
+# 2. Optional — rename the folder too.
+git mv src/components/andamio src/components/app
+find src -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -exec sed -i '' 's|components/andamio|components/app|g' {} +
+
+# 3. Verify nothing broke.
+npm run check
+```
+
+**Don't rename**: `@andamio/core`, `@andamio/datum-utils` (real npm packages), `useAndamioAuth` (auth hook tied to the gateway), or anything inside `src/types/generated/` (regenerated from the API spec). The `[A-Z]` guard in the sed above already skips these.
 
 ### Q: Can I use a different backend?
 
@@ -315,7 +338,6 @@ Then check `isFeatureEnabled("projects")` in your components.
 | Protocol doc comments | Developer reference for understanding code |
 | Generated type names | Auto-generated from API spec |
 | Andamioscan links | Protocol-specific blockchain explorer |
-| `Andamio*` component names | Design system lineage |
 
 ---
 

@@ -1,0 +1,109 @@
+{
+  "reviewer": "correctness",
+  "findings": [
+    {
+      "title": "next.config.js crashes on startup after VERSION file deletion",
+      "severity": "P0",
+      "file": "next.config.js",
+      "line": 12,
+      "confidence": 0.99,
+      "autofix_class": "safe_auto",
+      "owner": "review-fixer",
+      "requires_verification": false,
+      "pre_existing": false,
+      "suggested_fix": "Replace `const appVersion = readFileSync(\"VERSION\", \"utf-8\").trim();` with a guarded read that falls back to the package.json version field or a hardcoded default: `let appVersion = \"unknown\"; try { appVersion = readFileSync(\"VERSION\", \"utf-8\").trim(); } catch { appVersion = JSON.parse(readFileSync(\"package.json\", \"utf-8\")).version ?? \"unknown\"; }`. Alternatively, delete the version-embedding logic entirely from next.config.js if NEXT_PUBLIC_APP_VERSION is no longer meaningful without the stamp-version machinery."
+    },
+    {
+      "title": "generate-types.sh re-adds apiVersion to package.json after every run",
+      "severity": "P1",
+      "file": "scripts/generate-types.sh",
+      "line": 46,
+      "confidence": 0.97,
+      "autofix_class": "safe_auto",
+      "owner": "review-fixer",
+      "requires_verification": false,
+      "pre_existing": false,
+      "suggested_fix": "Remove the apiVersion sync block (lines 46-52) from generate-types.sh. The apiVersion field was intentionally deleted from package.json in this PR; the script that writes it back was not updated. The API version is already captured in src/types/generated/api-metadata.json so removing the package.json write loses nothing."
+    },
+    {
+      "title": "sed rename procedure in WHITE_LABEL_GUIDE.md silently mutates useAndamioAuth and src/types/generated/",
+      "severity": "P1",
+      "file": "docs/WHITE_LABEL_GUIDE.md",
+      "line": 257,
+      "confidence": 0.98,
+      "autofix_class": "manual",
+      "owner": "review-fixer",
+      "requires_verification": false,
+      "pre_existing": false,
+      "suggested_fix": "The doc claims the `[A-Z]` guard in `s/Andamio\\([A-Z]\\)/App\\1/g` skips `useAndamioAuth` and `src/types/generated/` — both claims are false. `useAndamioAuth` contains `AndamioA` (uppercase A) and IS matched, becoming `useAppAuth`, which breaks the local auth hook. `src/types/generated/gateway.ts` and `index.ts` are inside `src/` and match the `find src` scope — the find command has no `-not -path` exclusion. Fix both the prose and the command: (1) add `--not -path 'src/types/generated/*'` prune to the find, (2) correct the exemption list to note that `useAndamioAuth`, `AndamioAuthProvider`, and `AndamioAuthContext` will also be renamed (which may be intentional for a full rebrand, but must be stated clearly rather than claimed as skipped)."
+    },
+    {
+      "title": ".skills/getting-started/SKILL.md references deleted /auth skill",
+      "severity": "P2",
+      "file": ".skills/getting-started/SKILL.md",
+      "line": 131,
+      "confidence": 0.99,
+      "autofix_class": "safe_auto",
+      "owner": "review-fixer",
+      "requires_verification": false,
+      "pre_existing": false,
+      "suggested_fix": "Line 131 tells users `Run /auth to learn API keys and JWT login` but .skills/auth/ was deleted in this PR. Remove or replace this row. The auth concepts are now covered inline in AGENTS.md — point to that instead, e.g., `See AGENTS.md → Authentication section`."
+    },
+    {
+      "title": ".env.example references deleted e2e/README.md",
+      "severity": "P2",
+      "file": ".env.example",
+      "line": 108,
+      "confidence": 0.99,
+      "autofix_class": "safe_auto",
+      "owner": "review-fixer",
+      "requires_verification": false,
+      "pre_existing": false,
+      "suggested_fix": "Lines 105-116 of .env.example contain an '# OPTIONAL: E2E Testing Configuration' section that says 'See e2e/README.md for full setup instructions.' The e2e/ directory was deleted entirely. Remove this section from .env.example. The BLOCKFROST_PREPROD_API_KEY and TEST_WALLET_MNEMONIC variables are only needed for the now-deleted E2E tests."
+    },
+    {
+      "title": "package-lock.json still contains @playwright/test after devDependency removal",
+      "severity": "P3",
+      "file": "package-lock.json",
+      "line": 104,
+      "confidence": 0.95,
+      "autofix_class": "safe_auto",
+      "owner": "review-fixer",
+      "requires_verification": false,
+      "pre_existing": false,
+      "suggested_fix": "Run `npm install` to regenerate package-lock.json without @playwright/test. The lockfile is committed (tracked by git), so the stale entry means a forker running `npm ci` will still install playwright (a large binary dependency). Running `npm install` after the package.json change will produce a clean lockfile."
+    },
+    {
+      "title": ".skills/getting-started/SKILL.md references non-existent /fix and /ship skills",
+      "severity": "P3",
+      "file": ".skills/getting-started/SKILL.md",
+      "line": 133,
+      "confidence": 0.99,
+      "autofix_class": "safe_auto",
+      "owner": "review-fixer",
+      "requires_verification": false,
+      "pre_existing": true,
+      "suggested_fix": "Lines 133-134 reference `/fix` and `/ship` skills that do not exist in .skills/. These were pre-existing dead references (not introduced by this PR) but this PR's cleanup is the right moment to remove them. The README and AGENTS.md now correctly list only the four real skills."
+    }
+  ],
+  "residual_risks": [
+    {
+      "description": "The sed rename in WHITE_LABEL_GUIDE.md (Option B) also renames AndamioAuthProvider and AndamioAuthContext in andamio-auth-context.tsx. Whether this is desired depends on the forker's intent. A full rename run will silently change the auth context internals without a TypeScript error since the names are consistent throughout the file. The `npm run check` suggested in step 3 will pass even after the rename because the types remain internally consistent. A forker who does the rename but doesn't understand the auth plumbing may be confused when reading Andamio gateway docs that still reference the original hook names.",
+      "severity": "P2"
+    },
+    {
+      "description": "docs/maintainers/CONTRIBUTING.md line 98 references `@andamio/db-api` as a package to always import types from, but this package is not in package.json. This appears to be stale guidance carried over from a different product repo. Pre-existing issue, not introduced by this PR.",
+      "severity": "P3"
+    }
+  ],
+  "testing_gaps": [
+    {
+      "description": "There is no smoke test or CI job that runs `next build` or `next dev --help` on the template as a forker would. The P0 `readFileSync('VERSION')` crash would have been caught immediately by any CI that runs `npm run build`. The PR body states 'typecheck passes' but typecheck (`tsc --noEmit`) does not execute next.config.js — only `next build` / `next dev` do.",
+      "coverage_needed": "A CI step that runs `npm run build` (or at minimum `node next.config.js`) would catch config-load crashes before merge."
+    },
+    {
+      "description": "The sed command in WHITE_LABEL_GUIDE.md has no automated test. A simple shell test fixture (three representative file names run through the sed) would verify the guard claims before the doc ships.",
+      "coverage_needed": "Manual verification or a one-line shell test in the PR before merging."
+    }
+  ]
+}

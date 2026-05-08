@@ -1,0 +1,104 @@
+{
+  "reviewer": "agent-native",
+  "findings": [
+    {
+      "id": "AN-01",
+      "severity": "critical",
+      "question": 3,
+      "title": "sed pattern silently renames useAndamioAuth",
+      "location": "docs/WHITE_LABEL_GUIDE.md:246",
+      "description": "The sed command `s/Andamio\\([A-Z]\\)/App\\1/g` matches `useAndamioAuth` because the 'A' in 'Auth' satisfies `[A-Z]`, producing `useAppAuth` across 201 call sites. The inline comment claims '[A-Z] guard skips matches like `andamio-auth`' but that is only true for lowercase-prefixed tokens. The hook name is PascalCase-middle (`useAndamioAuth`), so it is caught. A forker running this command will silently break authentication; `npm run check` will surface it as 'useAppAuth is not defined', but the error message won't clearly point back to the sed rename. Fix: exclude the hook explicitly with a negative lookahead or document `useAndamioAuth` as a pre-exclusion: `s/\\(useAndamioAuth\\)\\|Andamio\\([A-Z]\\)/\\1App\\2/g` -- or simply add `sed -i '' '/useAndamioAuth/!s/Andamio\\([A-Z]\\)/App\\1/g'` per-file logic. Alternatively, rephrase the comment to say the guard does NOT protect camelCase identifiers."
+    },
+    {
+      "id": "AN-02",
+      "severity": "critical",
+      "question": 3,
+      "title": "src/types/generated/ is NOT excluded from the find/sed command",
+      "location": "docs/WHITE_LABEL_GUIDE.md:245-254",
+      "description": "The `find src -type f \\( -name '*.ts' -o -name '*.tsx' \\)` command has no `-path '*/types/generated*' -prune` clause. The guide's prose says 'anything inside src/types/generated/ (regenerated from the API spec)' should not be renamed, but the command will rewrite it anyway. Confirmed: `src/types/generated/index.ts` and `src/types/generated/gateway.ts` both contain `Andamio[A-Z]` matches (e.g. comment text 'AndamioApiInternal*', JSDoc examples 'AndamioToken'). These are cosmetic-only matches in comments and example strings, so they won't break the type-check, but it's inconsistent with the stated intent and could confuse an agent re-running `npm run generate:types` which overwrites the file and undoes the rename. Fix: add `-not -path '*/types/generated/*'` to the find command."
+    },
+    {
+      "id": "AN-03",
+      "severity": "warning",
+      "question": 1,
+      "title": "getting-started still references deleted skills /auth, /fix, /ship",
+      "location": ".skills/getting-started/SKILL.md:131-137",
+      "description": "Step 7 of getting-started offers a next-steps table that lists `/auth`, `/fix`, and `/ship` as runnable skills. All three were deleted in this PR. An agent following the script will tell the forker 'Run /auth to learn API keys and JWT login' and then fail when the forker tries it -- no SKILL.md exists to load. The getting-started skill was not touched in this PR but it is now stale relative to the four-skill set. Fix: replace the three dead references with links to the surviving skills (`/transactions` covers auth context; `/design-system` for styling; generic git/ship workflow is now unscaffolded and could be noted as 'use your agent's native git tools')."
+    },
+    {
+      "id": "AN-04",
+      "severity": "warning",
+      "question": 2,
+      "title": "Step 1 of Adding Your Own TX Type is backend-only with no template scaffolding",
+      "location": ".skills/transactions/SKILL.md:128",
+      "description": "Step 1 ('Backend: expose a build endpoint that returns unsigned CBOR') is the heaviest lift in the five-step sequence and the one the agent can help with least. The skill's introductory framing says 'you only write the type-specific schema and the build endpoint on the backend', but nothing in the skill or codebase provides a scaffold, example file, or even a pointer to a reference endpoint implementation the forker can copy. An agent executing this flow will stall here and be forced to improvise, likely suggesting an ad-hoc route handler that may not match the CBOR contract the hooks expect. The README Customization section still references `src/config/transaction-types/` (a directory that does not exist), which would cause additional confusion. Recommendation: add a minimal annotated example backend endpoint (even as a code block) in the skill, or link to a specific existing route handler in the codebase the agent can point the forker at as a reference."
+    },
+    {
+      "id": "AN-05",
+      "severity": "warning",
+      "question": 2,
+      "title": "tx_type vocabulary in transactions/SKILL.md does not match actual TransactionType enum",
+      "location": ".skills/transactions/SKILL.md:109-122",
+      "description": "The TX Types table lists shorthand names like `access_token_mint`, `course_create`, `project_join`, `task_submit`, `task_assess`. The actual enum values in `src/config/transaction-ui.ts` are `GLOBAL_GENERAL_ACCESS_TOKEN_MINT`, `INSTANCE_COURSE_CREATE`, `PROJECT_CONTRIBUTOR_TASK_COMMIT`, `PROJECT_CONTRIBUTOR_TASK_ACTION`, `PROJECT_MANAGER_TASKS_ASSESS`. An agent following the 'Adding Your Own TX Type' steps will register a type like `my_app_action` (Step 3 example) and call `useTransaction()` with it -- but the existing hooks expect a value that satisfies the `TransactionType` union. The type-check will catch this, but the agent will get a confusing TS error with no hint that the naming convention is `NAMESPACE_ROLE_ACTION`. Fix: update the TX Types table to show the real enum values, or add a naming-convention note before Step 2 in the Adding section."
+    },
+    {
+      "id": "AN-06",
+      "severity": "warning",
+      "question": 4,
+      "title": "getting-started to four-skill handoff is partially broken: /auth gap leaves auth undiscoverable",
+      "location": ".skills/getting-started/SKILL.md:127-137 and AGENTS.md:95-143",
+      "description": "AGENTS.md documents authentication patterns (wallet connect → JWT flow, hex-to-bech32 conversion, wallet-switch detection) as inline prose, not as a skill. After this PR the only agent-navigable entry point for auth is the AGENTS.md rules section, which is not skill-invocable. A forker who runs `/getting-started` and then asks 'how do I gate a page behind auth?' has no `/auth` to run and nothing in `/transactions` or `/design-system` that covers it. The AGENTS.md auth section is rich (RequireAuth pattern, two login flows, security features) but invisible to the skill navigation. This is a context parity gap: the human reading README.md sees auth documentation; the agent has no skill to surface it interactively. Recommendation: either promote the AGENTS.md auth block into a minimal `/auth` skill or add an explicit 'Authentication' callout in the getting-started Step 7 next-steps table pointing at the AGENTS.md section directly."
+    },
+    {
+      "id": "AN-07",
+      "severity": "observation",
+      "question": 1,
+      "title": "task-lifecycle skill outcome is reference-only; no agent-executable verification step",
+      "location": ".skills/task-lifecycle/SKILL.md",
+      "description": "The pre-PR version of this skill had the forker actually execute a commit transaction on preprod ('Try It (Demo Mode)'). This PR correctly removed that since it required preprod ADA and an access token that a forker won't have. The replacement is a purely reference skill: read the code, understand the flow, adapt it. That is coherent for the stated forker-outcome goal, but it means there is no agent-runnable verification: the agent cannot confirm the forker understood the adaptation steps or that their customization was correct. Consider adding a lightweight code-search step (grep for `project_join` to find all call sites, then confirm the forker replaced it with their type) so the skill ends with a verifiable action rather than open-ended guidance."
+    },
+    {
+      "id": "AN-08",
+      "severity": "observation",
+      "question": 3,
+      "title": "sed command uses macOS-only -i '' syntax; Linux agents will fail",
+      "location": "docs/WHITE_LABEL_GUIDE.md:246, 251",
+      "description": "BSD sed (macOS) requires `-i ''` for in-place edit with no backup. GNU sed (Linux, WSL) treats `-i ''` as setting the backup suffix to an empty string and the command succeeds but may behave differently depending on version; some versions error. An agent running this in a Linux CI container or a WSL environment could get unexpected behavior. Not a blocker for most forkers on macOS, but worth noting with a Linux alternative: `sed -i 's/.../.../' {}` (no quotes after -i on GNU sed). The guide could add a one-line OS-detection wrapper or note the discrepancy."
+    },
+    {
+      "id": "AN-09",
+      "severity": "observation",
+      "question": 5,
+      "title": "No agent parity gap: all user-reachable actions in this PR are skill-reachable or AGENTS.md-documented",
+      "location": "N/A",
+      "description": "After this PR the four skills cover the primary forker workflows: theme customization (getting-started), UI patterns (design-system), adding transactions (transactions), and understanding/adapting the contributor flow (task-lifecycle). AGENTS.md documents auth, API patterns, wallet UI rules, and environment setup. The deleted skills (auth, tx-challenge, fix, ship) removed interactive scaffolding but did not create a new parity gap -- the underlying capabilities (auth patterns, tx building, git workflow) are still accessible via AGENTS.md rules or the remaining skills. The only genuine parity issue is the dead /auth, /fix, /ship references in getting-started (AN-03), which is a broken pointer rather than a missing capability."
+    }
+  ],
+  "residual_risks": [
+    {
+      "id": "RR-01",
+      "description": "The sed rename procedure has two confirmed bugs (AN-01, AN-02) that could silently corrupt the auth layer or generated types. An agent executing this procedure verbatim will break the forked app in a way that is hard to diagnose without knowing the root cause is the rename. This is the highest-confidence risk in the PR.",
+      "confidence": 0.95
+    },
+    {
+      "id": "RR-02",
+      "description": "The TransactionType enum mismatch (AN-05) means a forker who follows the five-step Adding Your Own TX Type guide will get a TypeScript error at Step 4 with no obvious connection to the naming convention described in Step 3. An agent without knowledge of the enum will likely iterate on incorrect type strings before discovering the actual union.",
+      "confidence": 0.90
+    },
+    {
+      "id": "RR-03",
+      "description": "The missing src/config/transaction-types/ directory referenced in the README Customization section ('Transactions: Configure TX schemas in src/config/transaction-types/') is a dangling pointer. An agent following README onboarding for a forker will read the wrong path. The actual path is src/config/transaction-ui.ts and transaction-schemas.ts. Low blast radius but adds noise to the first-forker experience.",
+      "confidence": 0.92
+    }
+  ],
+  "testing_gaps": [
+    {
+      "id": "TG-01",
+      "description": "The sed rename procedure in WHITE_LABEL_GUIDE.md is documented as 'run and check with npm run check' but there is no automated test that exercises the rename on a fixture to confirm it produces a working build. Before an agent can confidently recommend this procedure it should be known-good against the actual codebase. Suggest: add a CI smoke-test or at minimum run the procedure manually on a branch and confirm npm run check passes before the PR lands."
+    },
+    {
+      "id": "TG-02",
+      "description": "The e2e test suite was removed from package.json in this PR (@playwright/test dependency dropped, all test:e2e:* scripts removed). The task-lifecycle skill previously referenced 'e2e/tests/projects/task-commitment-flow.spec.ts for automated test coverage' (removed in diff). There is now no automated verification that the commit → submit → assess flow works end-to-end. This is a regression in verifiable correctness for the skill's core subject matter. Recommendation: either restore a minimal Playwright config or add a note to the task-lifecycle skill that the forker should manually verify the full flow before relying on it in production."
+    }
+  ]
+}

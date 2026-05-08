@@ -1,0 +1,127 @@
+{
+  "reviewer": "maintainability",
+  "findings": [
+    {
+      "id": "M-01",
+      "severity": "high",
+      "confidence": 0.98,
+      "category": "dead_code",
+      "title": "getting-started SKILL.md step 7 still lists three deleted skills",
+      "file": ".skills/getting-started/SKILL.md",
+      "lines": "131-134",
+      "description": "The 'Offer Next Steps' block in getting-started SKILL.md lines 131-134 instructs the agent to suggest `/auth`, `/fix`, and `/ship` to new developers. Those three skills were deleted by this PR. Any forker who runs `/getting-started` will be sent to skills that do not exist, producing a confusing 'skill not found' failure immediately after their first success.",
+      "fix": "Remove the three deleted rows from the step-7 table. Replace with the four surviving skills: `/design-system`, `/transactions`, `/task-lifecycle`, and optionally a note that the forker can add their own skills following the Agent Skills spec."
+    },
+    {
+      "id": "M-02",
+      "severity": "high",
+      "confidence": 0.97,
+      "category": "dead_code",
+      "title": "generate-types.sh writes apiVersion back to package.json after the field was removed",
+      "file": "scripts/generate-types.sh",
+      "lines": "46-52",
+      "description": "package.json no longer has an `apiVersion` field (removed in this PR). generate-types.sh lines 46-52 reads package.json, sets `pkg.apiVersion = apiVersion`, and writes the file back. Every run of `npm run generate:types` (or `npm run compile`) silently re-adds the field. The PR comment at line 3 still says 'Updates apiVersion in package.json'. This is a regeneration side-effect that undoes an intentional cleanup — any developer running `compile` will see the field re-appear and likely commit it, creating noise in every future PR touching types.",
+      "fix": "Remove lines 46-52 from generate-types.sh and update the comment on line 3. apiVersion tracking now lives solely in src/types/generated/api-metadata.json — that is sufficient."
+    },
+    {
+      "id": "M-03",
+      "severity": "high",
+      "confidence": 0.97,
+      "category": "dead_code",
+      "title": "generate-types.sh comment still references deleted stamp-version.sh",
+      "file": "scripts/generate-types.sh",
+      "lines": "3, 46",
+      "description": "Lines 3 and 46 both say 'app version is stamped separately by stamp-version.sh'. stamp-version.sh was deleted in an earlier PR. The comment implies a companion script exists for managing app version; new contributors or forkers will look for it and not find it, and may duplicate the work unnecessarily.",
+      "fix": "After removing the apiVersion block (see M-02), update line 3 comment to simply read: '# Generate TypeScript types and capture API metadata from the gateway OpenAPI spec.'"
+    },
+    {
+      "id": "M-04",
+      "severity": "medium",
+      "confidence": 0.95,
+      "category": "dead_code",
+      "title": ".env.example references deleted e2e/README.md",
+      "file": ".env.example",
+      "line": 108,
+      "description": "Line 108 reads 'See e2e/README.md for full setup instructions.' The e2e/ directory was removed in a previous PR. A forker following the .env.example instruction to set E2E variables will look for a file that does not exist. This is distinct from the already-flagged package-lock.json issue — this is a developer-facing documentation reference that will actively mislead.",
+      "fix": "Remove line 108 and the entire E2E variables block that follows it in .env.example, or replace with a note that E2E testing is not included in the template."
+    },
+    {
+      "id": "M-05",
+      "severity": "medium",
+      "confidence": 0.92,
+      "category": "naming_obscures_intent",
+      "title": "design-system SKILL.md frontmatter description names Andamio as product, not template",
+      "file": ".skills/design-system/SKILL.md",
+      "lines": "2-8",
+      "description": "The frontmatter description reads 'Andamio design system expertise' and line 8 reads 'Comprehensive Andamio design system skill'. The parallel skills (transactions, task-lifecycle) were updated in this PR to use forker-oriented language ('in this template', 'for your own app'). design-system was not updated. A forker reading the skill will see it as Andamio-internal rather than as guidance for their own app. The three other surviving skills all use second-person forker framing in their descriptions.",
+      "fix": "Update frontmatter description to: 'Design system reference for this template — three modes: review routes for styling compliance, diagnose CSS specificity conflicts, or look up design patterns.' Update line 8 to match."
+    },
+    {
+      "id": "M-06",
+      "severity": "medium",
+      "confidence": 0.90,
+      "category": "dead_code",
+      "title": "design-system SKILL.md contains /workflows:compound — an internal Andamio tool not available to forkers",
+      "file": ".skills/design-system/SKILL.md",
+      "lines": "249-257",
+      "description": "The 'Compound Engineering' section at the bottom of design-system SKILL.md instructs the agent to run `/workflows:compound` after solving a styling problem. This command is an Andamio-internal compound-engineering workflow that does not exist in a forked template. A forker's agent will fail silently or with a confusing error when it tries to execute this command. The section was not introduced by this PR but should have been pruned during the template-cleanup pass.",
+      "fix": "Remove the 'Compound Engineering' section (lines 249-257) from design-system SKILL.md entirely, or replace it with a neutral suggestion to document findings in a NOTES.md of the forker's choosing."
+    },
+    {
+      "id": "M-07",
+      "severity": "medium",
+      "confidence": 0.88,
+      "category": "naming_obscures_intent",
+      "title": "getting-started SKILL.md retains a stale 'Last Updated: March 2026' timestamp while the other skills dropped theirs",
+      "file": ".skills/getting-started/SKILL.md",
+      "line": 172,
+      "description": "The transactions and task-lifecycle skills had their 'Last Updated' lines removed in this PR. getting-started still has '**Last Updated**: March 2026' at line 172. Hardcoded dates in living documents become stale noise within weeks. More practically, it creates inconsistency: three of four skills have no date footer; one does. A developer reading all four skills to understand the template will notice the inconsistency and wonder if the others are outdated.",
+      "fix": "Remove line 172 from getting-started SKILL.md to match the other three skills."
+    },
+    {
+      "id": "M-08",
+      "severity": "low",
+      "confidence": 0.82,
+      "category": "naming_obscures_intent",
+      "title": "Skill description for getting-started uses imperative agent-instruction voice; others use forker-benefit voice",
+      "file": ".skills/getting-started/SKILL.md",
+      "lines": "2-3",
+      "description": "The getting-started frontmatter description reads: 'Welcome new developers and deliver a quick win - guide them to customize the app's theme colors and see instant results via hot reload.' This is written as an instruction to the agent ('Welcome new developers', 'deliver a quick win'). The other three skills are written as descriptions of what the forker gets: 'How Cardano transactions work in this template', 'How the contributor task flow works in this template'. The inconsistency is minor but a future maintainer editing skill descriptions may not know which voice convention to follow.",
+      "fix": "Rewrite to match the others: 'Customize the app theme colors and see hot-reload results in under 2 minutes — the first thing to do after forking.'"
+    },
+    {
+      "id": "M-09",
+      "severity": "low",
+      "confidence": 0.80,
+      "category": "dead_code",
+      "title": "CONTRIBUTING.md rename left no external links pointing to the new path, but GitHub's default CONTRIBUTING.md discovery is now broken",
+      "file": "docs/maintainers/CONTRIBUTING.md",
+      "description": "GitHub automatically surfaces a CONTRIBUTING.md at the repo root (or in docs/ or .github/) in the 'new issue' and 'new PR' contributor flow. The file was moved from the root to docs/maintainers/CONTRIBUTING.md, which is not one of GitHub's recognized discovery paths (root, /docs, /.github). The file is now functionally invisible to GitHub's UI. No internal links were broken (README and AGENTS.md never linked to it), but the intended audience — contributors opening a PR via GitHub — will no longer see the link. The move solved forker noise but created a discoverability problem for upstream contributors.",
+      "fix": "Either move the file to docs/CONTRIBUTING.md (GitHub recognizes /docs/CONTRIBUTING.md) or add a .github/CONTRIBUTING.md that symlinks or redirects, or accept the trade-off and note it in a comment."
+    }
+  ],
+  "residual_risks": [
+    {
+      "id": "RR-01",
+      "description": "generate-types.sh comment and apiVersion write-back (M-02, M-03) mean every CI run or local `npm run compile` will silently mutate package.json in ways inconsistent with this PR's intent. If this lands before the script is fixed, the next sync commit will re-introduce the removed field and confuse the git history."
+    },
+    {
+      "id": "RR-02",
+      "description": "The four skills have been decoupled from the 'learning path' metaphor but there is no explicit guidance for a forker on what to do *after* getting-started. transactions and task-lifecycle both end with 'Related Skills' pointers, but design-system does not cross-reference any of the others. A forker who runs `/design-system` first has no onward path."
+    },
+    {
+      "id": "RR-03",
+      "description": "design-system SKILL.md's Compound Engineering section (M-06) references /workflows:compound. If a forker's agent (e.g. Claude Code with MCP tooling) tries to execute this as a slash command, it may trigger unexpected behavior depending on what compound-engineering plugins are installed in their environment. The risk is low but non-zero in automated agent workflows."
+    }
+  ],
+  "testing_gaps": [
+    {
+      "id": "TG-01",
+      "description": "No smoke test verifies that each of the four skill slash commands can be invoked without referencing a missing file or deleted skill. A simple CI check that greps each SKILL.md for references to skill names not present in .skills/ would catch M-01 and future regressions of this class automatically."
+    },
+    {
+      "id": "TG-02",
+      "description": "next.config.js line 12 does readFileSync('VERSION') synchronously at startup. With VERSION deleted (flagged as P0 by the sibling reviewer), `npm run dev` and `npm run build` both crash before any test suite can run. Until next.config.js is fixed, the entire test surface is unreachable — so it is impossible to validate that the remaining four routes and hooks still work after this PR's deletions."
+    }
+  ]
+}

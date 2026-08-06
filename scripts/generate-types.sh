@@ -5,7 +5,12 @@
 set -e
 
 GATEWAY_URL="${NEXT_PUBLIC_ANDAMIO_GATEWAY_URL:-https://preprod.api.andamio.io}"
-SPEC_URL="${GATEWAY_URL}/api/v1/docs/doc.json"
+# /api/v1/docs/doc.json is the interactive Swagger UI's route (main_router.go)
+# and has been unreachable on preprod since some point after 2026-05-10 (last
+# successful run of this script) - looks like the live "try it out" UI was
+# deliberately taken off preprod while the raw spec stayed public. See
+# /home/andrew/code/2025/andamio/DEVNOTES.md for how this was diagnosed.
+SPEC_URL="${GATEWAY_URL}/openapi/swagger.public.json"
 OUTPUT_DIR="src/types/generated"
 METADATA_FILE="${OUTPUT_DIR}/api-metadata.json"
 
@@ -20,7 +25,11 @@ npx swagger-typescript-api generate \
 
 # Remove @ts-nocheck - types compile cleanly without it (verified 2026-03-13)
 # This enables TypeScript compile-time checking on generated API types
-sed -i '' 's|// @ts-nocheck|// TypeScript checking enabled - API types are compile-time safe|' "${OUTPUT_DIR}/gateway.ts"
+# -i.bak (not -i '') because that's the one form GNU sed (Linux/CI) and BSD
+# sed (macOS) both accept - `-i ''` only works on BSD sed and silently
+# breaks on Linux (see DEVNOTES.md).
+sed -i.bak 's|// @ts-nocheck|// TypeScript checking enabled - API types are compile-time safe|' "${OUTPUT_DIR}/gateway.ts"
+rm -f "${OUTPUT_DIR}/gateway.ts.bak"
 
 # Save API metadata for traceability
 node -e "

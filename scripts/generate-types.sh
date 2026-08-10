@@ -31,7 +31,10 @@ npx swagger-typescript-api generate \
 sed -i.bak 's|// @ts-nocheck|// TypeScript checking enabled - API types are compile-time safe|' "${OUTPUT_DIR}/gateway.ts"
 rm -f "${OUTPUT_DIR}/gateway.ts.bak"
 
-# Save API metadata for traceability
+# Save API metadata for traceability. No fetched_at timestamp here on
+# purpose - it would change on every run and make this file un-diffable in
+# CI's drift check. When this metadata was last generated is already
+# answered by `git log` on this file.
 node -e "
   fetch('${SPEC_URL}')
     .then(r => r.json())
@@ -43,7 +46,6 @@ node -e "
         api_title: spec.info?.title ?? 'unknown',
         x_api_revision: spec.info?.['x-api-revision'] ?? apiVersion,
         x_build_commit: spec.info?.['x-build-commit'] ?? 'unknown',
-        fetched_at: new Date().toISOString(),
         spec_url: '${SPEC_URL}',
       };
       fs.writeFileSync('${METADATA_FILE}', JSON.stringify(meta, null, 2) + '\n');

@@ -173,7 +173,6 @@ export type {
   UpdateProjectRequest,
   CreateTaskRequest,
   UpdateTaskRequest,
-  CreateTaskCommitmentRequest,
   UpdateTaskCommitmentRequest,
 } from "./gateway";
 
@@ -190,8 +189,6 @@ export type {
   SignatureData,
 
   // Developer login
-  LoginRequest,
-  LoginResponse,
   JWTResponse,
 } from "./gateway";
 

@@ -10,6 +10,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "generate:types": "bash scripts/generate-types.sh",
+    "check:transaction-endpoints": "tsx scripts/check-transaction-endpoints.ts",
     "compile": "npm run generate:types && npm run build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

@@ -53,6 +53,24 @@ export enum AggregateUpdateErrorResponseCode {
   UNAUTHORIZED = "UNAUTHORIZED",
 }
 
+export interface APIKeyMetadata {
+  /** CreatedAt is the key creation timestamp. */
+  created_at?: string;
+  /** ID is the API key UUID. */
+  id?: string;
+  /** IsActive indicates whether the key is currently active. */
+  is_active?: boolean;
+  /** Kind is the key type: 'developer' or 'enterprise'. */
+  kind?: string;
+  /** Prefix is the first 12 characters of the key (without the plaintext key itself). */
+  prefix?: string;
+  /**
+   * Role is the capability level within the account ('admin' or 'member'), or
+   * empty for developer keys not associated with an account.
+   */
+  role?: string;
+}
+
 export interface APIKeyRequest {
   /**
    * @minLength 3
@@ -82,75 +100,6 @@ export interface APIKeyResponse {
   name: string;
 }
 
-export interface APIUsage {
-  /** @example "MyFirstKey" */
-  api_key_name?: string;
-  /** @example "v1" */
-  api_version?: string;
-  /** @example "API_KEY" */
-  authentication_method?: string;
-  /** @example false */
-  cache_hit?: boolean;
-  /** @example "2023-01-01T12:34:56Z" */
-  created_at?: string;
-  /** @example 1024 */
-  data_transfer_in_bytes?: number;
-  /** @example 2048 */
-  data_transfer_out_bytes?: number;
-  /** @example "/v1/data" */
-  endpoint?: string;
-  /** @example 0 */
-  error_count?: number;
-  /** @example "GET" */
-  http_method?: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  id?: string;
-  /** @example "192.168.1.1" */
-  ip_address?: string;
-  /** @example 20 */
-  latency_to_db_ms?: number;
-  /** @example false */
-  quota_exceeded?: boolean;
-  /** @example "minute" */
-  rate_limit_type?: string;
-  /** @example false */
-  rate_limited?: boolean;
-  /** @example 999 */
-  remaining_quota?: number;
-  /** @example 99 */
-  remaining_rate_limit?: number;
-  /** @example 100 */
-  request_body_size_bytes?: number;
-  /** @example 1 */
-  request_count?: number;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  request_id?: string;
-  /** @example 500 */
-  response_body_size_bytes?: number;
-  /** @example 150 */
-  response_time_ms?: number;
-  /** @example 200 */
-  status_code?: number;
-  /** @example 1 */
-  tier_id?: number;
-  /** @example "Free" */
-  tier_name?: string;
-  /** @example "2023-01-01T12:34:56Z" */
-  timestamp?: string;
-  /** @example "2023-01-01T12:34:56Z" */
-  updated_at?: string;
-  /** @example "Mozilla/5.0" */
-  user_agent?: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  user_id?: string;
-}
-
-export interface APIUsageMetric {
-  /** @example "MyFirstKey" */
-  api_key_name?: string;
-  usage_metrics?: APIUsage[];
-}
-
 export interface AddFundsTxRequest {
   /**
    * Plain text alias. Any characters allowed.
@@ -166,11 +115,6 @@ export interface AddFundsTxRequest {
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
   project_id?: string;
-}
-
-export interface AddTeachersV2Request {
-  aliases?: string[];
-  course_id?: string;
 }
 
 export interface AggregateAssignmentInput {
@@ -276,21 +220,21 @@ export interface AliasExistsResponse {
   exists?: boolean;
 }
 
-export interface AnyUserDailyApiUsageRequest {
-  /** @example "2023-01-31" */
-  end_date: string;
-  /** @example "2023-01-01" */
-  start_date: string;
-  /**
-   * @maxItems 64
-   * @minItems 1
-   */
-  user_infos?: UserInfo[];
-}
-
-export interface AnyUserDailyApiUsageResponse {
-  /** A list of usage data, aggregated by user. */
-  users_usages?: UserUsage[];
+export interface AllocationMetadata {
+  active?: boolean;
+  api_key_id?: string;
+  costs?: Record<string, any>;
+  course_ids?: string[];
+  created_at?: string;
+  /** ID is the opaque db-api allocation identifier (CUID, not UUID; api#532). */
+  id?: string;
+  kind?: string;
+  quota?: number;
+  revoked_at?: string;
+  route_key?: string;
+  scope_kind?: string;
+  updated_at?: string;
+  used?: number;
 }
 
 export interface AssessAssignmentsTxRequest {
@@ -455,12 +399,6 @@ export interface ClaimCourseCredentialsTxRequest {
   course_id?: string;
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
-}
-
-export interface ClaimCredentialV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  pending_tx_hash?: string;
 }
 
 export interface ClaimProjectCredentialsTxRequest {
@@ -722,9 +660,21 @@ export interface CourseModuleV2 {
   video_url?: string;
 }
 
-export interface CreateAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
+export interface CreateAllocationRequest {
+  api_key_id?: string;
+  costs?: Record<string, any>;
+  course_ids?: string[];
+  /** "developer" or "enterprise" */
+  kind?: string;
+  route_key?: string;
+  /** "course" or "route" */
+  scope_kind?: string;
+  total_quota?: number;
+}
+
+export interface CreateAllocationResponse {
+  allocation?: AllocationMetadata;
+  cross_env_operation_id?: string;
 }
 
 export interface CreateCourseRequest {
@@ -786,12 +736,6 @@ export interface CreateProjectTxRequest {
   managers?: string[];
 }
 
-export interface CreateTaskCommitmentRequest {
-  evidence?: Record<string, any>;
-  /** @example "hash_abc123" */
-  task_hash: string;
-}
-
 export interface CreateTaskRequest {
   /** @example "Build a responsive login page" */
   content?: string;
@@ -820,6 +764,13 @@ export interface CredentialModuleInfo {
   course_module_code?: string;
   slt_hash?: string;
   title?: string;
+}
+
+export interface CrossEnvKeyMetadata {
+  /** "mainnet", "preprod", etc. */
+  source_env?: string;
+  /** Hashed key from source environment */
+  source_key?: string;
 }
 
 export interface DashboardCommitmentSummary {
@@ -904,6 +855,15 @@ export interface DashboardUser {
   wallet_address?: string;
 }
 
+export type DeactivateAPIKeyRequest = object;
+
+export interface DeactivateAPIKeyResponse {
+  cross_env_operation_id?: string;
+  is_active?: boolean;
+  key_id?: string;
+  updated_at?: string;
+}
+
 export interface DeleteAPIKeyRequest {
   /**
    * @minLength 3
@@ -928,20 +888,6 @@ export interface DeleteTaskRequest {
   contributor_state_id: string;
   /** @example 0 */
   index: number;
-}
-
-export interface DeleteUserRequest {
-  /**
-   * @minLength 3
-   * @maxLength 50
-   * @example "johndoe"
-   */
-  alias: string;
-}
-
-export interface DeleteUserResponse {
-  /** @example "User deleted successfully." */
-  message?: string;
 }
 
 export interface EmailVerificationStatusResponse {
@@ -993,6 +939,11 @@ export interface ForbiddenErrorResponse {
   status_code: number;
 }
 
+export interface GetAllocationResponse {
+  allocation?: AllocationMetadata;
+  cross_env_operation_id?: string;
+}
+
 export interface GetContributorCommitmentRequest {
   project_id?: string;
   task_hash?: string;
@@ -1014,9 +965,15 @@ export interface GoneErrorResponse {
   status_code: number;
 }
 
-export interface InitRolesResponse {
-  courses?: Course[];
-  projects?: Project[];
+export interface InitialAllocationSpec {
+  costs?: Record<string, any>;
+  course_ids?: string[];
+  /** "developer" or "enterprise" */
+  kind?: string;
+  route_key?: string;
+  /** "course" or "route" */
+  scope_kind?: string;
+  total_quota?: number;
 }
 
 export interface InternalServerErrorResponse {
@@ -1092,12 +1049,6 @@ export interface KeyListItem {
   name?: string;
 }
 
-export interface LeaveAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  pending_tx_hash?: string;
-}
-
 export interface LessonV2 {
   /** ContentJson Tiptap JSON content */
   content_json?: Record<string, any>;
@@ -1107,6 +1058,27 @@ export interface LessonV2 {
   is_live?: boolean;
   title?: string;
   video_url?: string;
+}
+
+export interface ListAccountAPIKeysResponse {
+  account_id?: string;
+  keys?: APIKeyMetadata[];
+}
+
+export interface ListAccountAuditMeta {
+  pagination?: PaginationMeta;
+}
+
+export interface ListAccountAuditResponse {
+  account_id?: string;
+  audits?: SponsorshipAuditRecord[];
+  meta?: ListAccountAuditMeta;
+}
+
+export interface ListAllocationsResponse {
+  allocations?: AllocationMetadata[];
+  api_key_id?: string;
+  cross_env_operation_id?: string;
 }
 
 export interface ListKeysKeyMetadata {
@@ -1152,31 +1124,6 @@ export interface LoginCompleteRequest {
   session_id: string;
   /** CIP-30 signature data from a Cardano wallet, containing the COSE_Sign1 signature and COSE_Key. */
   signature: SignatureData;
-}
-
-export interface LoginRequest {
-  /**
-   * @minLength 1
-   * @maxLength 32
-   * @example "johndoe"
-   */
-  alias: string;
-  /**
-   * @minLength 103
-   * @maxLength 108
-   * @example "addr1q..."
-   */
-  wallet_address: string;
-}
-
-export interface LoginResponse {
-  /** @example "johndoe" */
-  alias: string;
-  jwt: JWTResponse;
-  /** @example "Free" */
-  tier: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  user_id: string;
 }
 
 export interface LoginSession {
@@ -1376,11 +1323,6 @@ export interface MeResponse {
   tier: string;
   /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
   user_id: string;
-}
-
-/** Standard API response envelope for user profile */
-export interface MeResponseEnvelope {
-  data: MeResponse;
 }
 
 export interface MergedAssignmentContent {
@@ -1748,12 +1690,20 @@ export interface Pagination {
   total: number;
 }
 
-export interface PaymentRequiredErrorResponse {
-  details?: string;
-  /** @example "Payment Required: Sponsorship quota exhausted." */
-  message: string;
-  /** @example 402 */
-  status_code: number;
+export interface PaginationMeta {
+  has_more?: boolean;
+  next_cursor?: number;
+}
+
+export interface PatchAllocationRequest {
+  costs?: Record<string, any>;
+  kind?: string;
+  total_quota?: number;
+}
+
+export interface PatchAllocationResponse {
+  allocation?: AllocationMetadata;
+  cross_env_operation_id?: string;
 }
 
 export interface PendingAssessmentSummary {
@@ -1885,6 +1835,16 @@ export interface PostProjectContributorCommitmentDeleteJSONRequestBody {
   task_hash?: string;
 }
 
+export interface PostProjectContributorCommitmentSubmitJSONRequestBody {
+  /** Evidence Rich JSON evidence content (Tiptap document) */
+  evidence?: Record<string, any>;
+  /** EvidenceHash Hash of evidence for on-chain verification */
+  evidence_hash?: string;
+  /** PendingTxHash Blockchain transaction hash */
+  pending_tx_hash?: string;
+  task_hash?: string;
+}
+
 export interface PostUserAccessTokenAliasJSONRequestBody {
   access_token_alias?: string;
 }
@@ -1999,6 +1959,49 @@ export interface ProjectsDashboard {
   pending_assessments?: DashboardPendingAssessmentSummary[];
   total_pending_assessments?: number;
   with_prerequisites?: DashboardProjectWithPrereqs[];
+}
+
+export interface ProvisionEnterpriseKeyRequest {
+  /**
+   * Bucket M5: multi-key account attachment (enterprise keys only).
+   * AccountID attaches the key to an existing account (multi-key path).
+   * If omitted, a new account is created for the key (auto-generated single-key account).
+   */
+  account_id?: string;
+  /**
+   * AccountName is the human-readable name for a newly created enterprise account.
+   * Only used when AccountID is omitted (auto-generated single-key account path).
+   * If not provided, defaults to a generated name. Ignored on the multi-key path.
+   */
+  account_name?: string;
+  cross_env_key_metadata?: CrossEnvKeyMetadata;
+  initial_allocations?: InitialAllocationSpec[];
+  /** "developer" or "enterprise" */
+  kind?: string;
+  /**
+   * Role is the capability level within the account ('admin' or 'member').
+   * Defaults to 'admin' if omitted. Only valid for enterprise keys.
+   */
+  role?: string;
+}
+
+export interface ProvisionEnterpriseKeyResponse {
+  /** Bucket M5: account ownership and role (enterprise keys only). */
+  account_id?: string;
+  allocations?: AllocationMetadata[];
+  cross_env_operation_id?: string;
+  /**
+   * Key is the one-time plaintext X-API-Key — present only on 201, cryptographically
+   * unrecoverable afterward (only the hash is stored). Full semantics: INTERNAL_AUTH.md §1.3.
+   * @example "ant_mn_xxxxxxxxxxxxxxxxxxxxxxxx"
+   */
+  key?: string;
+  key_id?: string;
+  kind?: string;
+  /** "admin" or "member" */
+  role?: string;
+  /** Only present on 422 (partial failure) */
+  rolled_back?: RollbackDetail;
 }
 
 export interface PublicCourseModuleItem {
@@ -2136,27 +2139,6 @@ export interface RegisterProjectRequest {
   title?: string;
 }
 
-export interface RegisterRequest {
-  /**
-   * @minLength 1
-   * @maxLength 32
-   * @example "johndoe"
-   */
-  alias: string;
-  /**
-   * @minLength 1
-   * @maxLength 254
-   * @example "john.doe@example.com"
-   */
-  email: string;
-  /**
-   * @minLength 103
-   * @maxLength 108
-   * @example "addr1q..."
-   */
-  wallet_address: string;
-}
-
 export interface RegisterResponse {
   /** @example "johndoe" */
   alias?: string;
@@ -2220,11 +2202,6 @@ export interface RegisteredSltItem {
   slt_text?: string;
 }
 
-export interface RemoveTeachersV2Request {
-  aliases?: string[];
-  course_id?: string;
-}
-
 export interface ResendVerificationResponse {
   /** @example "Verification email sent" */
   message?: string;
@@ -2242,11 +2219,26 @@ export interface ReviewAssignmentCommitmentV2Request {
   pending_tx_hash?: string;
 }
 
+export interface RevokeAllocationRequest {
+  kind?: string;
+}
+
+export interface RevokeAllocationResponse {
+  allocation?: AllocationMetadata;
+  cross_env_operation_id?: string;
+}
+
 export interface RevokeKeyResponse {
   cross_env_operation_id?: string;
   environment?: string;
   key_id?: string;
   revoked_at?: string;
+}
+
+export interface RollbackDetail {
+  /** AllocationID is the opaque db-api allocation identifier (CUID, not UUID; api#532). */
+  allocation_id?: string;
+  error?: string;
 }
 
 export interface RotateAPIKeyRequest {
@@ -2297,37 +2289,6 @@ export interface ServiceUnavailableErrorResponse {
   status_code: number;
 }
 
-export interface SetUserRoleRequest {
-  /** @example 1 */
-  tier_id?: number;
-  /** @example "pro" */
-  tier_name?: string;
-  /** @example "123e4567-e89b-12d3-a456-426614174000" */
-  user_id: string;
-}
-
-export interface SetUserRoleResponse {
-  /** @example "User role updated successfully." */
-  message?: string;
-  /**
-   * @min 1
-   * @example 1
-   */
-  tier_id: number;
-  /**
-   * @minLength 1
-   * @example "pro"
-   */
-  tier_name: string;
-  /** @example "123e4567-e89b-12d3-a456-426614174000" */
-  user_id?: string;
-}
-
-/** Standard API response envelope for setting user role */
-export interface SetUserRoleResponseEnvelope {
-  data: SetUserRoleResponse;
-}
-
 /** CIP-30 signature data from a Cardano wallet, containing the COSE_Sign1 signature and COSE_Key. */
 export interface SignatureData {
   /** @example "a4010103272006215820..." */
@@ -2354,6 +2315,18 @@ export interface SponsorData {
    * Do not pick arbitrary UTxOs — the sponsorship contract requires this exact reference.
    */
   static_utxo_ref: string;
+}
+
+export interface SponsorshipAuditRecord {
+  allocation_id?: string;
+  api_key_id?: string;
+  at?: string;
+  /** "build_recorded", "build_consumed", etc. */
+  event?: string;
+  id?: number;
+  /** "developer" or "enterprise" */
+  kind?: string;
+  tx_hash?: string;
 }
 
 /** Request to start an Access Token ownership verification session. */
@@ -2477,14 +2450,6 @@ export interface SubmitAssignmentCommitmentV2Request {
   pending_tx_hash?: string;
   /** SltHash The SLT hash identifying the module (on-chain identifier) */
   slt_hash?: string;
-}
-
-export interface SubmitSponsoredRequest {
-  /**
-   * holder-signed tx hex
-   * @example "84a40081825820..."
-   */
-  tx: string;
 }
 
 export interface SubscriptionStatus {
@@ -2831,75 +2796,6 @@ export interface UpdateTaskRequest {
   tokens?: CreateTaskToken[];
 }
 
-export interface UpdateTeachersV2Request {
-  /** Add Aliases to add as teachers */
-  add?: string[];
-  course_id?: string;
-  /** Remove Aliases to remove as teachers */
-  remove?: string[];
-}
-
-export interface UpdateTeachersV2Response {
-  course_id?: string;
-  success?: boolean;
-  teachers_added?: string[];
-  /** TeachersCurrent Final list of teachers after updates */
-  teachers_current?: string[];
-  teachers_removed?: string[];
-}
-
-export interface UsageData {
-  /** @example "MyFirstKey" */
-  api_key_name?: string;
-  /** @example ["[\"v1\"]"] */
-  api_versions?: string[];
-  /** @example ["[\"API_KEY\"]"] */
-  authentication_methods?: string[];
-  /** @example "2023-01-01T00:00:00Z" */
-  date?: string;
-  /** @example ["[\"/v1/data\"]"] */
-  endpoints?: string[];
-  /** @example ["[\"GET\"]"] */
-  http_methods?: string[];
-  /** @example 500 */
-  max_response_time_ms?: number;
-  /** @example 10 */
-  min_response_time_ms?: number;
-  /** @example 1 */
-  tier_id?: number;
-  /** @example "Free" */
-  tier_name?: string;
-  /** @example 100 */
-  total_cache_hit_count?: number;
-  /** @example 1024000 */
-  total_data_transfer_in_bytes?: number;
-  /** @example 2048000 */
-  total_data_transfer_out_bytes?: number;
-  /** @example 50 */
-  total_error_count?: number;
-  /** @example 2 */
-  total_quota_exceeded_count?: number;
-  /** @example 5 */
-  total_rate_limited_count?: number;
-  /** @example 1000 */
-  total_requests?: number;
-  /** @example 50000 */
-  total_response_time_ms?: number;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  user_id?: string;
-  /**
-   * Added UserIPs
-   * @example ["[\"192.168.1.1\"]"]
-   */
-  user_ips?: string[];
-}
-
-export interface UsagePerApiKeyName {
-  /** @example "MyFirstKey" */
-  api_key_name?: string;
-  usage_data?: UsageData[];
-}
-
 export interface UsageResponse {
   /** @example 50 */
   daily_quota_consumed?: number;
@@ -2919,91 +2815,6 @@ export interface UsageResponse {
   remaining_monthly?: number;
   /** @example "Free" */
   subscription_tier?: string;
-}
-
-/** Standard API response envelope for usage metrics */
-export interface UsageResponseEnvelope {
-  data: UsageResponse;
-}
-
-export interface UserAPIUsageRequest {
-  /**
-   * @minLength 1
-   * @maxLength 64
-   * @example "johndoe"
-   */
-  alias: string;
-  /** @example ["[\"MyFirstKey\""," \"AnotherKey\"]"] */
-  api_key_names?: string[];
-  /** @example "2023-01-31" */
-  end_date: string;
-  /** @example "2023-01-01" */
-  start_date: string;
-}
-
-export interface UserAPIUsageResponse {
-  /** @example "johndoe" */
-  alias?: string;
-  api_usage_metrics?: APIUsageMetric[];
-}
-
-export interface UserDailyApiUsageRequest {
-  /** @example ["[\"MyFirstKey\""," \"AnotherKey\"]"] */
-  api_key_names?: string[];
-  /** @example "2023-01-31" */
-  end_date: string;
-  /** @example "2023-01-01" */
-  start_date: string;
-}
-
-export interface UserDailyApiUsageResponse {
-  user_usages?: UserUsagePerApiKeyName[];
-}
-
-export interface UserInfo {
-  /**
-   * @minLength 1
-   * @maxLength 64
-   * @example "johndoe"
-   */
-  alias: string;
-  /** @example ["[\"MyFirstKey\""," \"AnotherKey\"]"] */
-  api_key_names?: string[];
-}
-
-export interface UserUsage {
-  /** @example "johndoe" */
-  alias?: string;
-  usages?: UsagePerApiKeyName[];
-}
-
-export interface UserUsageData {
-  /** @example "MyFirstKey" */
-  api_key_name?: string;
-  /** @example ["[\"v1\"]"] */
-  api_versions?: string[];
-  /** @example ["[\"API_KEY\"]"] */
-  authentication_methods?: string[];
-  /** @example "2023-01-01" */
-  date?: string;
-  /** @example ["[\"/v1/data\"]"] */
-  endpoints?: string[];
-  /** @example ["[\"GET\"]"] */
-  http_methods?: string[];
-  /** @example 1 */
-  tier_id?: number;
-  /** @example "Free" */
-  tier_name?: string;
-  /** @example 50 */
-  total_error_count?: number;
-  /** @example 1000 */
-  total_requests?: number;
-}
-
-export interface UserUsagePerApiKeyName {
-  /** @example "MyFirstKey" */
-  api_key_name?: string;
-  usage_Data?: UserUsageData[];
 }
 
 /** List of valid transaction types that can be registered with the TX State Machine. */

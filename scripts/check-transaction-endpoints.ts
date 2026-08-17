@@ -1,7 +1,8 @@
 // Checks every URL in TRANSACTION_ENDPOINTS actually exists in the live
-// gateway's OpenAPI spec. Catches the case where the gateway renames,
-// removes, or moves a transaction endpoint but this repo's hardcoded path
-// map (plain strings, not generated from the spec) doesn't get updated -
+// gateway's OpenAPI spec, and still has a POST operation defined. Catches
+// the case where the gateway renames, removes, or moves a transaction
+// endpoint (or drops its POST handler) but this repo's hardcoded path map
+// (plain strings, not generated from the spec) doesn't get updated -
 // TypeScript can't catch that on its own since nothing here is typed
 // against the spec.
 //
@@ -24,13 +25,16 @@ async function main() {
   if (!res.ok) {
     throw new Error(`Failed to fetch spec: ${res.status} ${res.statusText}`);
   }
-  const spec = (await res.json()) as { paths?: Record<string, unknown> };
-  const specPaths = new Set(Object.keys(spec.paths ?? {}));
+  const spec = (await res.json()) as {
+    paths?: Record<string, Record<string, unknown>>;
+  };
+  const specPaths = spec.paths ?? {};
 
   const missing: Array<{ txType: string; endpoint: string }> = [];
   for (const [txType, endpoint] of Object.entries(TRANSACTION_ENDPOINTS)) {
     const specPath = endpoint.replace(/^\/api/, "");
-    if (!specPaths.has(specPath)) {
+    const ops = specPaths[specPath];
+    if (!ops || !("post" in ops)) {
       missing.push({ txType, endpoint });
     }
   }

@@ -1,7 +1,7 @@
 {
-  "api_version": "unknown",
+  "api_version": "2.5.0",
   "api_title": "Andamio API Gateway",
-  "x_api_revision": "unknown",
+  "x_api_revision": "2.5.0",
   "x_build_commit": "unknown",
   "spec_url": "https://preprod.api.andamio.io/openapi/swagger.public.json"
 }

@@ -19,8 +19,8 @@ jobs:
 
       - run: npm run generate:types
 
-      - run: git diff --exit-code -- src/types/generated/gateway.ts src/types/generated/api-metadata.json
-
       - run: npm run check
+
+      - run: git diff --exit-code -- src/types/generated/gateway.ts src/types/generated/api-metadata.json
 
       - run: npm run check:transaction-endpoints

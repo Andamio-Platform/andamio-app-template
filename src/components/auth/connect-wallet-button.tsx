@@ -2,10 +2,12 @@
 
 import React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useWallet, useWalletList } from "@meshsdk/react";
 import type { Wallet } from "@meshsdk/common";
 import { Web3Wallet } from "@utxos/sdk";
 import type { EnableWeb3WalletOptions } from "@utxos/sdk";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { WalletIcon, LoadingIcon } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import {
@@ -93,6 +95,8 @@ interface SocialProvider {
   name: string;
   icon: React.ReactNode;
 }
+
+const MESH_WEB3_WALLET_NAME = MESH_WEB3_WALLET_NAME;
 
 const SOCIAL_PROVIDERS: SocialProvider[] = [
   { id: "google", name: "Google", icon: <IconGoogle /> },
@@ -196,16 +200,38 @@ function SocialIconButton({
 /*  Connected button with dropdown (copy address, disconnect)                 */
 /* -------------------------------------------------------------------------- */
 
-function ConnectedDropdown() {
+function ConnectedDropdown({ className }: { className?: string }) {
   const { address, name, disconnect } = useWallet();
+  const { isAuthenticated, logout, authenticate } = useAndamioAuth();
+  const router = useRouter();
   const wallets = useWalletList();
   const connectedWallet = wallets.find((w) => w.id === name);
-  const isWeb3 = name === "Mesh Web3 Services";
+  const isWeb3 = name === MESH_WEB3_WALLET_NAME;
+
+  const handleSignOut = () => {
+    logout("sign_out");
+    disconnect();
+    router.push("/");
+  };
+
+  // Wallet connected but not signed in — prompt them to complete sign-in
+  if (!isAuthenticated) {
+    return (
+      <Button
+        variant="outline"
+        className={cn("gap-2", className)}
+        onClick={() => void authenticate()}
+      >
+        <WalletIcon className="h-4 w-4" />
+        <span>Sign In</span>
+      </Button>
+    );
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className={cn("gap-2", className)}>
           {connectedWallet?.icon ? (
             <Image
               src={connectedWallet.icon}
@@ -237,8 +263,11 @@ function ConnectedDropdown() {
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => disconnect()}>
-          Disconnect
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={handleSignOut}
+        >
+          Sign Out & Disconnect Wallet
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -337,7 +366,7 @@ export function ConnectWalletButton({
         setWallet(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @utxos/sdk Web3Wallet#cardano shape differs from @meshsdk/react setWallet expected wallet type
           web3Wallet.cardano as any,
-          "Mesh Web3 Services",
+          MESH_WEB3_WALLET_NAME,
           persist
             ? { walletAddress: await getWalletAddressBech32(web3Wallet.cardano), user }
             : undefined
@@ -353,7 +382,7 @@ export function ConnectWalletButton({
   );
 
   if (connected) {
-    return <ConnectedDropdown />;
+    return <ConnectedDropdown className={className} />;
   }
 
   // Defer Dialog rendering until after hydration to prevent radix ID mismatch

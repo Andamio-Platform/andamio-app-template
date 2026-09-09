@@ -35,6 +35,12 @@ const config = {
     transpilePackages: ["@andamio/core"],
     images: {
     remotePatterns: [
+      // -----------------------------------------------------------------------
+      // PRODUCTION: Explicit allowlist of trusted image hostnames.
+      // Before deploying, replace this list with only the domains your app
+      // actually serves images from. Allowing arbitrary hostnames exposes your
+      // server to image-proxy abuse and SSRF attacks.
+      // -----------------------------------------------------------------------
       {
         protocol: "https",
         hostname: "*.andamio.io",
@@ -75,6 +81,28 @@ const config = {
         protocol: "https",
         hostname: "i.imgur.com",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.corenexis.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.ftcdn.net",
+      },
+      {
+        protocol: "https",
+        hostname: "assets.hackquest.io",
+      },
+      // -----------------------------------------------------------------------
+      // DEVELOPMENT ONLY: Allow all HTTPS sources and localhost for convenience.
+      // Never use "**" in production.
+      // -----------------------------------------------------------------------
+      ...(process.env.NODE_ENV === "development"
+        ? /** @type {import("next").NextConfig["images"]["remotePatterns"]} */ ([
+            { protocol: "https", hostname: "**" },
+            { protocol: "http", hostname: "localhost" },
+          ])
+        : []),
     ],
   },
 };

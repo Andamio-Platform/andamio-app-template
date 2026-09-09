@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 import { useWallet } from "@meshsdk/react";
 import { useTheme } from "next-themes";
 import { useAndamioAuth } from "~/contexts/andamio-auth-context";
@@ -12,109 +11,35 @@ import {
   WalletIcon,
   ShieldIcon,
   VerifiedIcon,
-  PendingIcon,
   SecurityAlertIcon,
   NeutralIcon,
   AccessTokenIcon,
-  LogOutIcon,
   LightModeIcon,
   DarkModeIcon,
 } from "~/components/icons";
-import { getStoredJWT } from "~/lib/andamio-auth";
 import { cn } from "~/lib/utils";
-
-interface JWTPayload {
-  exp?: number;
-  [key: string]: unknown;
-}
 
 /**
  * AuthStatusBar - A minimal, professional status bar showing connection state
  */
 export function AuthStatusBar() {
-  const router = useRouter();
   const { name: walletName } = useWallet();
   const { theme, setTheme } = useTheme();
   const {
     isWalletConnected,
     isAuthenticated,
     user,
-    logout,
     authError,
     popupBlocked,
     authenticate,
   } = useAndamioAuth();
 
   const [mounted, setMounted] = useState(false);
-  const [timeUntilExpiry, setTimeUntilExpiry] = useState<string | null>(null);
-  const [isExpiringSoon, setIsExpiringSoon] = useState(false);
-
-  const handleLogout = useCallback(() => {
-    logout("sign_out");
-    router.push("/");
-  }, [logout, router]);
 
   // Avoid hydration mismatch for theme
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Update JWT expiration countdown
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setTimeUntilExpiry(null);
-      setIsExpiringSoon(false);
-      return;
-    }
-
-    const updateExpiry = () => {
-      const jwt = getStoredJWT();
-      if (!jwt) {
-        setTimeUntilExpiry(null);
-        setIsExpiringSoon(false);
-        return;
-      }
-
-      try {
-        const payload = JSON.parse(atob(jwt.split('.')[1]!)) as JWTPayload;
-        if (!payload.exp) {
-          setTimeUntilExpiry(null);
-          return;
-        }
-        const expiresAt = payload.exp * 1000;
-        const now = Date.now();
-        const diff = expiresAt - now;
-
-        if (diff <= 0) {
-          setTimeUntilExpiry("Expired");
-          setIsExpiringSoon(true);
-          return;
-        }
-
-        // Check if expiring within 5 minutes
-        setIsExpiringSoon(diff < 5 * 60 * 1000);
-
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-        if (hours > 0) {
-          setTimeUntilExpiry(`${hours}h ${minutes}m`);
-        } else if (minutes > 0) {
-          setTimeUntilExpiry(`${minutes}m ${seconds}s`);
-        } else {
-          setTimeUntilExpiry(`${seconds}s`);
-        }
-      } catch (error) {
-        console.error("Error parsing JWT:", error);
-        setTimeUntilExpiry(null);
-      }
-    };
-
-    updateExpiry();
-    const interval = setInterval(updateExpiry, 1000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
 
   return (
     <div className="h-10 border-b border-primary-foreground/10 bg-primary text-primary-foreground">
@@ -185,33 +110,6 @@ export function AuthStatusBar() {
             )}
           </div>
 
-          {/* JWT Timer - Only show when authenticated, hidden on small screens */}
-          {isAuthenticated && timeUntilExpiry && (
-            <>
-              <div className="hidden sm:block h-4 w-px bg-primary-foreground/20 flex-shrink-0" />
-              <div className="hidden sm:flex items-center gap-1.5" aria-label={`Session expires in ${timeUntilExpiry}`}>
-                <PendingIcon
-                  className={cn(
-                    "h-3.5 w-3.5 flex-shrink-0",
-                    isExpiringSoon ? "text-warning" : "text-primary-foreground/70"
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-xs font-mono",
-                    timeUntilExpiry === "Expired"
-                      ? "text-destructive"
-                      : isExpiringSoon
-                      ? "text-warning"
-                      : "text-primary-foreground/70"
-                  )}
-                >
-                  {timeUntilExpiry === "Expired" ? "Exp" : timeUntilExpiry}
-                </span>
-              </div>
-            </>
-          )}
-
           {/* User Alias - Only show when authenticated, hidden on very small screens */}
           {isAuthenticated && user?.accessTokenAlias && (
             <>
@@ -245,22 +143,10 @@ export function AuthStatusBar() {
             </AndamioButton>
           )}
 
-          {isAuthenticated ? (
-            <AndamioButton
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="hidden sm:flex h-6 px-2 text-xs text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
-            >
-              <LogOutIcon className="mr-1.5 h-3 w-3" />
-              Sign Out
-            </AndamioButton>
-          ) : (
-            <ConnectWalletButton
-              label="Sign In"
-              className="hidden sm:flex h-6 px-2 text-xs border-0 bg-transparent text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
-            />
-          )}
+          <ConnectWalletButton
+            label="Sign In"
+            className="hidden sm:flex h-6 px-2 text-xs border-0 bg-transparent text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15 dark:bg-input/30 dark:border-input dark:text-foreground dark:hover:bg-input/50"
+          />
         </div>
       </div>
     </div>

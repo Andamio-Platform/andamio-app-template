@@ -96,7 +96,7 @@ interface SocialProvider {
   icon: React.ReactNode;
 }
 
-const MESH_WEB3_WALLET_NAME = MESH_WEB3_WALLET_NAME;
+const MESH_WEB3_WALLET_NAME = "Mesh Web3 Services";
 
 const SOCIAL_PROVIDERS: SocialProvider[] = [
   { id: "google", name: "Google", icon: <IconGoogle /> },

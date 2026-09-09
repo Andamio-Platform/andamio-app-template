@@ -98,7 +98,7 @@ const config = {
       // Never use "**" in production.
       // -----------------------------------------------------------------------
       ...(process.env.NODE_ENV === "development"
-        ? /** @type {import("next").NextConfig["images"]["remotePatterns"]} */ ([
+        ? /** @type {Array<{protocol: string, hostname: string}>} */ ([
             { protocol: "https", hostname: "**" },
             { protocol: "http", hostname: "localhost" },
           ])

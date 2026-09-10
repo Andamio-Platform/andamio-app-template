@@ -100,6 +100,10 @@ export interface APIKeyResponse {
   name: string;
 }
 
+export interface AddCourseIDRequest {
+  course_id: string;
+}
+
 export interface AddFundsTxRequest {
   /**
    * Plain text alias. Any characters allowed.
@@ -108,7 +112,10 @@ export interface AddFundsTxRequest {
    * @example "JohnDoe"
    */
   alias?: string;
-  /** List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.). */
+  /**
+   * List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.).
+   * Example: [["lovelace", 5000000]]
+   */
   deposit_value?: any[][];
   /**
    * Hash of a minting policy script.
@@ -621,6 +628,14 @@ export interface CourseContentInput {
   video_url?: string;
 }
 
+export interface CourseMembershipResponse {
+  account_id?: string;
+  course_ids?: string[];
+  created_at?: string;
+  id?: string;
+  updated_at?: string;
+}
+
 export interface CourseModule {
   created_by?: string;
   prerequisites?: string[];
@@ -732,6 +747,10 @@ export interface CreateProjectTxRequest {
    * @example "JohnDoe"
    */
   alias?: string;
+  /**
+   * List of [course_id, [slt_hash, ...]] tuples — each prerequisite course's ID paired with the array of its required SLT hashes. Proxied from Atlas, whose Haskell tuple type has no Swagger 2.0 equivalent; the inner shape is not otherwise expressible here. An empty list means no prerequisites.
+   * Example: [["ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef", ["c8bc55db03d6ead9c8bc55db03d6ead9c8bc55db03d6ead9c8bc55db03d6ead9"]]]
+   */
   course_prereqs?: any[][];
   managers?: string[];
 }
@@ -905,11 +924,20 @@ export interface EmailVerificationStatusResponse {
 
 /** Error details with code, message, and optional debug info */
 export interface ErrorDetail {
-  /** @example "BAD_REQUEST" */
+  /**
+   * Code is a stable machine-readable error identifier.
+   * @example "BAD_REQUEST"
+   */
   code: string;
-  /** @example "Field 'email' is required" */
+  /**
+   * Details carries optional additional debug context.
+   * @example "Field 'email' is required"
+   */
   details?: string;
-  /** @example "Invalid input provided" */
+  /**
+   * Message is a human-readable description of the error.
+   * @example "Invalid input provided"
+   */
   message: string;
 }
 
@@ -1075,6 +1103,11 @@ export interface ListAccountAuditResponse {
   meta?: ListAccountAuditMeta;
 }
 
+export interface ListAccountOpUsageResponse {
+  account_id?: string;
+  usage?: OpUsageBucket[];
+}
+
 export interface ListAllocationsResponse {
   allocations?: AllocationMetadata[];
   api_key_id?: string;
@@ -1226,7 +1259,10 @@ export interface ManageTasksTxRequest {
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
   contributor_state_id?: string;
-  /** List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.). */
+  /**
+   * List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.).
+   * Example: [["lovelace", 5000000]]
+   */
   deposit_value?: any[][];
   /**
    * Hash of a minting policy script.
@@ -1617,7 +1653,7 @@ export interface MintAccessTokenTxRequest {
 
 export interface MintModuleV2 {
   allowed_student_state_ids?: string[];
-  prereq_slt_hashes?: string[];
+  prereq_credential_hashes?: string[];
   slts?: string[];
 }
 
@@ -1680,13 +1716,34 @@ export interface NotFoundErrorResponse {
   status_code: number;
 }
 
+export interface OpUsageBucket {
+  /** Count is the number of builds in this (op_name, status) bucket. */
+  count?: number;
+  /**
+   * OpName is the observability label recorded at build time (e.g.
+   * "evidence-approve", "create-course") — see models.SponsorshipBuild.OpName.
+   */
+  op_name?: string;
+  /** Status is the build's lifecycle status ("BUILT", "SUBMITTED", "CONFIRMED", "FAILED"). */
+  status?: string;
+}
+
 /** Pagination metadata for list endpoints */
 export interface Pagination {
-  /** @example 1 */
+  /**
+   * Page is the current page number (1-based).
+   * @example 1
+   */
   page: number;
-  /** @example 20 */
+  /**
+   * PageSize is the number of items per page.
+   * @example 20
+   */
   page_size: number;
-  /** @example 100 */
+  /**
+   * Total is the total number of items across all pages.
+   * @example 100
+   */
   total: number;
 }
 
@@ -2662,42 +2719,6 @@ export interface TooManyRequestsErrorResponse {
   status_code: number;
 }
 
-/** Statistics about the TX State Machine for monitoring and debugging. */
-export interface TxStatsResponse {
-  /**
-   * Number of transactions confirmed on-chain
-   * @example 142
-   */
-  confirmed_count?: number;
-  /**
-   * Number of expired transactions (not confirmed within timeout)
-   * @example 0
-   */
-  expired_count?: number;
-  /**
-   * Number of failed transactions
-   * @example 2
-   */
-  failed_count?: number;
-  /**
-   * Number of transactions in pending state
-   * @example 5
-   */
-  pending_count?: number;
-  /**
-   * Current length of the confirmation queue
-   * @example 3
-   */
-  queue_length?: number;
-  /** Breakdown of pending transactions by type */
-  type_breakdown?: Record<string, number>;
-  /**
-   * Number of transactions with completed DB updates
-   * @example 140
-   */
-  updated_count?: number;
-}
-
 export interface UnauthorizedErrorResponse {
   details?: string;
   /** @example "Unauthorized: Invalid or missing credentials." */
@@ -2757,7 +2778,7 @@ export interface UpdateModuleStatusRequest {
 
 export interface UpdateModuleV2 {
   allowed_student_state_ids?: string[];
-  prereq_slt_hashes?: string[];
+  prereq_credential_hashes?: string[];
   /** Hex-encoded hash of the SLT (exactly 64 characters). */
   slt_hash?: string;
 }

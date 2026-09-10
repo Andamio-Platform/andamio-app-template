@@ -202,7 +202,7 @@ function SocialIconButton({
 
 function ConnectedDropdown({ className }: { className?: string }) {
   const { address, name, disconnect } = useWallet();
-  const { isAuthenticated, logout, authenticate } = useAndamioAuth();
+  const { isAuthenticated, isAuthenticating, logout, authenticate } = useAndamioAuth();
   const router = useRouter();
   const wallets = useWalletList();
   const connectedWallet = wallets.find((w) => w.id === name);
@@ -214,17 +214,33 @@ function ConnectedDropdown({ className }: { className?: string }) {
     router.push("/");
   };
 
-  // Wallet connected but not signed in — prompt them to complete sign-in
+  // Wallet connected but not signed in — offer sign-in and disconnect
   if (!isAuthenticated) {
     return (
-      <Button
-        variant="outline"
-        className={cn("gap-2", className)}
-        onClick={() => void authenticate()}
-      >
-        <WalletIcon className="h-4 w-4" />
-        <span>Sign In</span>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn("gap-2", className)}
+            disabled={isAuthenticating}
+          >
+            <WalletIcon className="h-4 w-4" />
+            <span>{isAuthenticating ? "Signing in..." : "Sign In"}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            onClick={() => void authenticate()}
+            disabled={isAuthenticating}
+          >
+            {isAuthenticating ? "Signing in..." : "Sign In"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onClick={() => disconnect()}>
+            Disconnect Wallet
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 

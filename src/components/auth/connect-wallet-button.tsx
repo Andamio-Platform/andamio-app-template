@@ -2,10 +2,13 @@
 
 import React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useWallet, useWalletList } from "@meshsdk/react";
 import type { Wallet } from "@meshsdk/common";
 import { Web3Wallet } from "@utxos/sdk";
 import type { EnableWeb3WalletOptions } from "@utxos/sdk";
+import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { getStoredJWT } from "~/lib/andamio-auth";
 import { WalletIcon, LoadingIcon } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import {
@@ -93,6 +96,8 @@ interface SocialProvider {
   name: string;
   icon: React.ReactNode;
 }
+
+const MESH_WEB3_WALLET_NAME = "Mesh Web3 Services";
 
 const SOCIAL_PROVIDERS: SocialProvider[] = [
   { id: "google", name: "Google", icon: <IconGoogle /> },
@@ -196,16 +201,59 @@ function SocialIconButton({
 /*  Connected button with dropdown (copy address, disconnect)                 */
 /* -------------------------------------------------------------------------- */
 
-function ConnectedDropdown() {
+function ConnectedDropdown({ className }: { className?: string }) {
   const { address, name, disconnect } = useWallet();
+  const { isAuthenticated, isAuthenticating, logout, authenticate } = useAndamioAuth();
+  const router = useRouter();
   const wallets = useWalletList();
   const connectedWallet = wallets.find((w) => w.id === name);
-  const isWeb3 = name === "Mesh Web3 Services";
+  const isWeb3 = name === MESH_WEB3_WALLET_NAME;
+
+  // True while a stored session is being restored on page load.
+  // getStoredJWT() is synchronous and safe to call during render.
+  const isRestoringSession = !isAuthenticated && !isAuthenticating && !!getStoredJWT();
+  const isBusy = isAuthenticating || isRestoringSession;
+
+  const handleSignOut = () => {
+    logout("sign_out");
+    disconnect();
+    router.push("/");
+  };
+
+  // Wallet connected but not signed in — offer sign-in and disconnect
+  if (!isAuthenticated) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn("gap-2", className)}
+            disabled={isBusy}
+          >
+            <WalletIcon className="h-4 w-4" />
+            <span>{isBusy ? "Signing in..." : "Sign In"}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem
+            onClick={() => void authenticate()}
+            disabled={isBusy}
+          >
+            {isBusy ? "Signing in..." : "Sign In"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onClick={() => disconnect()}>
+            Disconnect Wallet
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className={cn("gap-2", className)}>
           {connectedWallet?.icon ? (
             <Image
               src={connectedWallet.icon}
@@ -237,8 +285,11 @@ function ConnectedDropdown() {
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => disconnect()}>
-          Disconnect
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={handleSignOut}
+        >
+          Sign Out & Disconnect Wallet
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -337,7 +388,7 @@ export function ConnectWalletButton({
         setWallet(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @utxos/sdk Web3Wallet#cardano shape differs from @meshsdk/react setWallet expected wallet type
           web3Wallet.cardano as any,
-          "Mesh Web3 Services",
+          MESH_WEB3_WALLET_NAME,
           persist
             ? { walletAddress: await getWalletAddressBech32(web3Wallet.cardano), user }
             : undefined
@@ -353,7 +404,7 @@ export function ConnectWalletButton({
   );
 
   if (connected) {
-    return <ConnectedDropdown />;
+    return <ConnectedDropdown className={className} />;
   }
 
   // Defer Dialog rendering until after hydration to prevent radix ID mismatch

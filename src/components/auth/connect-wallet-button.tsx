@@ -8,6 +8,7 @@ import type { Wallet } from "@meshsdk/common";
 import { Web3Wallet } from "@utxos/sdk";
 import type { EnableWeb3WalletOptions } from "@utxos/sdk";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
+import { getStoredJWT } from "~/lib/andamio-auth";
 import { WalletIcon, LoadingIcon } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import {
@@ -208,6 +209,11 @@ function ConnectedDropdown({ className }: { className?: string }) {
   const connectedWallet = wallets.find((w) => w.id === name);
   const isWeb3 = name === MESH_WEB3_WALLET_NAME;
 
+  // True while a stored session is being restored on page load.
+  // getStoredJWT() is synchronous and safe to call during render.
+  const isRestoringSession = !isAuthenticated && !isAuthenticating && !!getStoredJWT();
+  const isBusy = isAuthenticating || isRestoringSession;
+
   const handleSignOut = () => {
     logout("sign_out");
     disconnect();
@@ -222,18 +228,18 @@ function ConnectedDropdown({ className }: { className?: string }) {
           <Button
             variant="outline"
             className={cn("gap-2", className)}
-            disabled={isAuthenticating}
+            disabled={isBusy}
           >
             <WalletIcon className="h-4 w-4" />
-            <span>{isAuthenticating ? "Signing in..." : "Sign In"}</span>
+            <span>{isBusy ? "Signing in..." : "Sign In"}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuItem
             onClick={() => void authenticate()}
-            disabled={isAuthenticating}
+            disabled={isBusy}
           >
-            {isAuthenticating ? "Signing in..." : "Sign In"}
+            {isBusy ? "Signing in..." : "Sign In"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => disconnect()}>

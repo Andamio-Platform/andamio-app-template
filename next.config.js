@@ -94,12 +94,10 @@ const config = {
         hostname: "assets.hackquest.io",
       },
       // -----------------------------------------------------------------------
-      // DEVELOPMENT ONLY: Allow all HTTPS sources and localhost for convenience.
-      // Never use "**" in production.
+      // DEVELOPMENT ONLY: Allow localhost image sources for convenience.
       // -----------------------------------------------------------------------
       ...(process.env.NODE_ENV === "development"
         ? /** @type {import("next/dist/shared/lib/image-config").RemotePattern[]} */ ([
-            { protocol: "https", hostname: "**" },
             { protocol: "http", hostname: "localhost" },
           ])
         : []),

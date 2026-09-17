@@ -8,7 +8,6 @@ import type { Wallet } from "@meshsdk/common";
 import { Web3Wallet } from "@utxos/sdk";
 import type { EnableWeb3WalletOptions } from "@utxos/sdk";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
-import { getStoredJWT } from "~/lib/andamio-auth";
 import { WalletIcon, LoadingIcon } from "~/components/icons";
 import { Button } from "~/components/ui/button";
 import {
@@ -203,15 +202,12 @@ function SocialIconButton({
 
 function ConnectedDropdown({ className }: { className?: string }) {
   const { address, name, disconnect } = useWallet();
-  const { isAuthenticated, isAuthenticating, logout, authenticate } = useAndamioAuth();
+  const { isAuthenticated, isAuthenticating, isRestoringSession, logout, authenticate } = useAndamioAuth();
   const router = useRouter();
   const wallets = useWalletList();
   const connectedWallet = wallets.find((w) => w.id === name);
   const isWeb3 = name === MESH_WEB3_WALLET_NAME;
 
-  // True while a stored session is being restored on page load.
-  // getStoredJWT() is synchronous and safe to call during render.
-  const isRestoringSession = !isAuthenticated && !isAuthenticating && !!getStoredJWT();
   const isBusy = isAuthenticating || isRestoringSession;
 
   const handleSignOut = () => {
@@ -222,16 +218,18 @@ function ConnectedDropdown({ className }: { className?: string }) {
 
   // Wallet connected but not signed in — offer sign-in and disconnect
   if (!isAuthenticated) {
+    const triggerLabel = isRestoringSession
+      ? "Restoring session..."
+      : isAuthenticating
+      ? "Signing in..."
+      : "Sign In";
+
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn("gap-2", className)}
-            disabled={isBusy}
-          >
+          <Button variant="outline" className={cn("gap-2", className)}>
             <WalletIcon className="h-4 w-4" />
-            <span>{isBusy ? "Signing in..." : "Sign In"}</span>
+            <span>{triggerLabel}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
@@ -239,7 +237,7 @@ function ConnectedDropdown({ className }: { className?: string }) {
             onClick={() => void authenticate()}
             disabled={isBusy}
           >
-            {isBusy ? "Signing in..." : "Sign In"}
+            {triggerLabel}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => disconnect()}>

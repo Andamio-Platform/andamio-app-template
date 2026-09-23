@@ -212,7 +212,6 @@ function ConnectedDropdown({ className }: { className?: string }) {
 
   const handleSignOut = () => {
     logout("sign_out");
-    disconnect();
     router.push("/");
   };
 

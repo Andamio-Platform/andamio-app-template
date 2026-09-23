@@ -81,18 +81,6 @@ const config = {
         protocol: "https",
         hostname: "i.imgur.com",
       },
-      {
-        protocol: "https",
-        hostname: "cdn.corenexis.com",
-      },
-      {
-        protocol: "https",
-        hostname: "*.ftcdn.net",
-      },
-      {
-        protocol: "https",
-        hostname: "assets.hackquest.io",
-      },
       // -----------------------------------------------------------------------
       // DEVELOPMENT ONLY: Allow localhost image sources for convenience.
       // -----------------------------------------------------------------------

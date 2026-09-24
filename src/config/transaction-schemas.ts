@@ -164,14 +164,14 @@ export const txSchemas = {
       z.object({
         slts: z.array(z.string()),
         allowed_student_state_ids: z.array(policyIdSchema),
-        prereq_slt_hashes: z.array(hashSchema),
+        prereq_credential_hashes: z.array(hashSchema),
       })
     ),
     modules_to_update: z.array(
       z.object({
         slt_hash: hashSchema,
         allowed_student_state_ids: z.array(policyIdSchema),
-        prereq_slt_hashes: z.array(hashSchema),
+        prereq_credential_hashes: z.array(hashSchema),
       })
     ),
     modules_to_remove: z.array(z.string()),

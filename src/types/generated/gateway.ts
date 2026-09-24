@@ -10,47 +10,13 @@
  * ---------------------------------------------------------------
  */
 
-export enum ReviewAssignmentCommitmentV2RequestDecision {
-  ReviewAssignmentCommitmentV2RequestDecisionAccept = "accept",
-  ReviewAssignmentCommitmentV2RequestDecisionRefuse = "refuse",
-}
-
-export enum CourseModuleV2ModuleStatus {
-  CourseModuleV2ModuleStatusAPPROVED = "APPROVED",
-  CourseModuleV2ModuleStatusARCHIVED = "ARCHIVED",
-  CourseModuleV2ModuleStatusDEPRECATED = "DEPRECATED",
-  CourseModuleV2ModuleStatusDRAFT = "DRAFT",
-  CourseModuleV2ModuleStatusONCHAIN = "ON_CHAIN",
-  CourseModuleV2ModuleStatusPENDINGTX = "PENDING_TX",
-}
-
-export enum AggregateUpdateModuleV2RequestStatus {
-  AggregateUpdateModuleV2RequestStatusAPPROVED = "APPROVED",
-}
-
-export enum AggregateUpdateErrorResponseFailedOperationOperation {
-  Approve = "approve",
-  Create = "create",
-  Delete = "delete",
-  Update = "update",
-}
-
-export enum AggregateUpdateErrorResponseFailedOperationEntity {
-  Assignment = "assignment",
-  Introduction = "introduction",
-  Lesson = "lesson",
-  Module = "module",
-  Slt = "slt",
-}
-
-export enum AggregateUpdateErrorResponseCode {
-  BADREQUEST = "BAD_REQUEST",
-  DUPLICATELESSONSLTINDEX = "DUPLICATE_LESSON_SLT_INDEX",
-  DUPLICATESLTINDEX = "DUPLICATE_SLT_INDEX",
-  INVALIDSLTHASH = "INVALID_SLT_HASH",
-  INVALIDSLTINDEX = "INVALID_SLT_INDEX",
-  MODULENOTFOUND = "MODULE_NOT_FOUND",
-  UNAUTHORIZED = "UNAUTHORIZED",
+export enum CourseModuleStatusV2 {
+  CourseModuleStatusV2Approved = "APPROVED",
+  CourseModuleStatusV2Archived = "ARCHIVED",
+  CourseModuleStatusV2Deprecated = "DEPRECATED",
+  CourseModuleStatusV2Draft = "DRAFT",
+  CourseModuleStatusV2OnChain = "ON_CHAIN",
+  CourseModuleStatusV2PendingTx = "PENDING_TX",
 }
 
 export interface APIKeyMetadata {
@@ -100,6 +66,10 @@ export interface APIKeyResponse {
   name: string;
 }
 
+export interface AddCourseIDRequest {
+  course_id: string;
+}
+
 export interface AddFundsTxRequest {
   /**
    * Plain text alias. Any characters allowed.
@@ -108,7 +78,10 @@ export interface AddFundsTxRequest {
    * @example "JohnDoe"
    */
   alias?: string;
-  /** List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.). */
+  /**
+   * List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.).
+   * Example: [["lovelace", 5000000]]
+   */
   deposit_value?: any[][];
   /**
    * Hash of a minting policy script.
@@ -118,7 +91,7 @@ export interface AddFundsTxRequest {
 }
 
 export interface AggregateAssignmentInput {
-  content_json?: Record<string, any>;
+  content_json?: JSONMap;
   description?: string;
   image_url?: string;
   title?: string;
@@ -139,80 +112,63 @@ export interface AggregateChangeSummary {
   slts_created?: number;
   slts_deleted?: number;
   slts_reordered?: boolean;
-  /** SltsSkipped True when SLTs were present in the request but module is not DRAFT */
   slts_skipped?: boolean;
   slts_updated?: number;
-  /** StatusChanged True if DRAFT → APPROVED */
   status_changed?: boolean;
 }
 
 export interface AggregateIntroductionInput {
-  content_json?: Record<string, any>;
+  content_json?: JSONMap;
   description?: string;
+  image_url?: string;
   title?: string;
+  video_url?: string;
 }
 
 export interface AggregateLessonInput {
-  content_json?: Record<string, any>;
+  content_json?: JSONMap;
   description?: string;
   image_url?: string;
-  /** SltIndex 1-based SLT index this lesson belongs to */
+  /** SltIndex 1-based, links to SLT */
   slt_index?: number;
   title?: string;
   video_url?: string;
 }
 
 export interface AggregateSltInput {
-  /** SltIndex 1-based index. If provided: update existing. If omitted: create new. */
+  /** SltIndex 1-based. If provided: update. If omitted: create new */
   slt_index?: number;
-  /** SltText The SLT text content */
   slt_text?: string;
 }
 
-export interface AggregateUpdateErrorResponse {
-  code?: AggregateUpdateErrorResponseCode;
-  error?: string;
-  failed_operation?: {
-    entity?: AggregateUpdateErrorResponseFailedOperationEntity;
-    entity_id?: number;
-    operation?: AggregateUpdateErrorResponseFailedOperationOperation;
-    reason?: string;
-  };
-  message?: string;
-}
-
 export interface AggregateUpdateModuleV2Request {
+  /** Assignment Assignment - full object. Omit = unchanged. */
   assignment?: AggregateAssignmentInput;
   course_id?: string;
   course_module_code?: string;
-  /** DeleteAssignment Set to true to delete the assignment */
+  /** DeleteAssignment DeleteAssignment - set true to delete assignment */
   delete_assignment?: boolean;
-  /** DeleteIntroduction Set to true to delete the introduction */
+  /** DeleteIntroduction DeleteIntroduction - set true to delete introduction */
   delete_introduction?: boolean;
-  /** Description Module description (only send if changed) */
   description?: string;
-  /** ImageUrl Module image URL (only send if changed) */
   image_url?: string;
+  /** Introduction Introduction - full object. Omit = unchanged. */
   introduction?: AggregateIntroductionInput;
-  /** Lessons Flat array of lessons keyed by slt_index. Server diffs against current state. Editable in any status. */
+  /** Lessons Lessons - flat array keyed by slt_index. Omit = unchanged. */
   lessons?: AggregateLessonInput[];
-  /** SltHash Required when status = 'APPROVED'. Hash of the SLT list. */
+  /** SltHash SltHash - required when status = "APPROVED" */
   slt_hash?: string;
-  /** Slts Full ordered list of SLTs. Server diffs against current state. ONLY allowed when status is DRAFT. */
+  /** Slts SLTs - full ordered list. ONLY allowed when status is DRAFT. */
   slts?: AggregateSltInput[];
-  /** Status Set to 'APPROVED' to approve a DRAFT module */
-  status?: AggregateUpdateModuleV2RequestStatus;
-  /** Title Module title (only send if changed) */
+  /** Status Status - only "APPROVED" is valid via this endpoint */
+  status?: string;
   title?: string;
-  /** VideoUrl Module video URL (only send if changed) */
   video_url?: string;
 }
 
 export interface AggregateUpdateModuleV2Response {
-  /** Changes Summary of what changed in the aggregate update */
   changes?: AggregateChangeSummary;
-  /** Data Course Module V2 with full content */
-  data?: CourseModuleV2;
+  data?: CourseModuleV2Output;
 }
 
 export interface AliasExistsResponse {
@@ -322,9 +278,8 @@ export interface AssignmentSubmissionInput {
   submission_url?: string;
 }
 
-export interface AssignmentV2 {
-  /** ContentJson Tiptap JSON content */
-  content_json?: Record<string, any>;
+export interface AssignmentV2Output {
+  content_json?: JSONMap;
   created_by_alias?: string;
   description?: string;
   image_url?: string;
@@ -621,6 +576,14 @@ export interface CourseContentInput {
   video_url?: string;
 }
 
+export interface CourseMembershipResponse {
+  account_id?: string;
+  course_ids?: string[];
+  created_at?: string;
+  id?: string;
+  updated_at?: string;
+}
+
 export interface CourseModule {
   created_by?: string;
   prerequisites?: string[];
@@ -643,19 +606,19 @@ export interface CourseModuleEntity {
   video_url?: string;
 }
 
-export interface CourseModuleV2 {
-  /** Assignment Assignment V2 (one-to-one with module) */
-  assignment?: AssignmentV2;
+export interface CourseModuleV2Output {
+  /** Assignment One-to-one optional */
+  assignment?: AssignmentV2Output;
   course_module_code?: string;
   created_by_alias?: string;
   description?: string;
   image_url?: string;
-  introduction?: IntroductionV2;
+  introduction?: IntroductionV2Output;
   is_live?: boolean;
-  module_status?: CourseModuleV2ModuleStatus;
-  /** SltHash Hash of SLT list, used as module token name on-chain */
+  module_status?: CourseModuleStatusV2;
+  /** SltHash Hash of SLT list, used as module token name */
   slt_hash?: string;
-  slts?: SltV2[];
+  slts?: SltV2Output[];
   title?: string;
   video_url?: string;
 }
@@ -732,6 +695,10 @@ export interface CreateProjectTxRequest {
    * @example "JohnDoe"
    */
   alias?: string;
+  /**
+   * List of [course_id, [slt_hash, ...]] tuples — each prerequisite course's ID paired with the array of its required SLT hashes. Proxied from Atlas, whose Haskell tuple type has no Swagger 2.0 equivalent; the inner shape is not otherwise expressible here. An empty list means no prerequisites.
+   * Example: [["ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef", ["c8bc55db03d6ead9c8bc55db03d6ead9c8bc55db03d6ead9c8bc55db03d6ead9"]]]
+   */
   course_prereqs?: any[][];
   managers?: string[];
 }
@@ -905,11 +872,20 @@ export interface EmailVerificationStatusResponse {
 
 /** Error details with code, message, and optional debug info */
 export interface ErrorDetail {
-  /** @example "BAD_REQUEST" */
+  /**
+   * Code is a stable machine-readable error identifier.
+   * @example "BAD_REQUEST"
+   */
   code: string;
-  /** @example "Field 'email' is required" */
+  /**
+   * Details carries optional additional debug context.
+   * @example "Field 'email' is required"
+   */
   details?: string;
-  /** @example "Invalid input provided" */
+  /**
+   * Message is a human-readable description of the error.
+   * @example "Invalid input provided"
+   */
   message: string;
 }
 
@@ -984,9 +960,8 @@ export interface InternalServerErrorResponse {
   status_code: number;
 }
 
-export interface IntroductionV2 {
-  /** ContentJson Tiptap JSON content */
-  content_json?: Record<string, any>;
+export interface IntroductionV2Output {
+  content_json?: JSONMap;
   created_by_alias?: string;
   description?: string;
   image_url?: string;
@@ -994,6 +969,8 @@ export interface IntroductionV2 {
   title?: string;
   video_url?: string;
 }
+
+export type JSONMap = Record<string, any>;
 
 /** A single JSON Web Key (JWK) as defined in RFC 7517. */
 export interface JWK {
@@ -1049,9 +1026,8 @@ export interface KeyListItem {
   name?: string;
 }
 
-export interface LessonV2 {
-  /** ContentJson Tiptap JSON content */
-  content_json?: Record<string, any>;
+export interface LessonV2Output {
+  content_json?: JSONMap;
   created_by_alias?: string;
   description?: string;
   image_url?: string;
@@ -1073,6 +1049,11 @@ export interface ListAccountAuditResponse {
   account_id?: string;
   audits?: SponsorshipAuditRecord[];
   meta?: ListAccountAuditMeta;
+}
+
+export interface ListAccountOpUsageResponse {
+  account_id?: string;
+  usage?: OpUsageBucket[];
 }
 
 export interface ListAllocationsResponse {
@@ -1226,7 +1207,10 @@ export interface ManageTasksTxRequest {
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
   contributor_state_id?: string;
-  /** List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.). */
+  /**
+   * List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.).
+   * Example: [["lovelace", 5000000]]
+   */
   deposit_value?: any[][];
   /**
    * Hash of a minting policy script.
@@ -1617,7 +1601,7 @@ export interface MintAccessTokenTxRequest {
 
 export interface MintModuleV2 {
   allowed_student_state_ids?: string[];
-  prereq_slt_hashes?: string[];
+  prereq_credential_hashes?: string[];
   slts?: string[];
 }
 
@@ -1680,13 +1664,34 @@ export interface NotFoundErrorResponse {
   status_code: number;
 }
 
+export interface OpUsageBucket {
+  /** Count is the number of builds in this (op_name, status) bucket. */
+  count?: number;
+  /**
+   * OpName is the observability label recorded at build time (e.g.
+   * "evidence-approve", "create-course") — see models.SponsorshipBuild.OpName.
+   */
+  op_name?: string;
+  /** Status is the build's lifecycle status ("BUILT", "SUBMITTED", "CONFIRMED", "FAILED"). */
+  status?: string;
+}
+
 /** Pagination metadata for list endpoints */
 export interface Pagination {
-  /** @example 1 */
+  /**
+   * Page is the current page number (1-based).
+   * @example 1
+   */
   page: number;
-  /** @example 20 */
+  /**
+   * PageSize is the number of items per page.
+   * @example 20
+   */
   page_size: number;
-  /** @example 100 */
+  /**
+   * Total is the total number of items across all pages.
+   * @example 100
+   */
   total: number;
 }
 
@@ -1836,11 +1841,8 @@ export interface PostProjectContributorCommitmentDeleteJSONRequestBody {
 }
 
 export interface PostProjectContributorCommitmentSubmitJSONRequestBody {
-  /** Evidence Rich JSON evidence content (Tiptap document) */
-  evidence?: Record<string, any>;
-  /** EvidenceHash Hash of evidence for on-chain verification */
+  evidence?: JSONMap;
   evidence_hash?: string;
-  /** PendingTxHash Blockchain transaction hash */
   pending_tx_hash?: string;
   task_hash?: string;
 }
@@ -2132,7 +2134,7 @@ export interface RegisterPendingTxRequest {
     | "access_token_mint";
 }
 
-export interface RegisterProjectRequest {
+export interface RegisterProjectV2Request {
   description?: string;
   image_url?: string;
   project_id?: string;
@@ -2181,17 +2183,11 @@ export interface RegisterSessionResponse {
 }
 
 export interface RegisterTokenRequest {
-  /** AssetName Hex-encoded asset name — 2-64 hex characters */
   asset_name?: string;
-  /** AssetNameDecoded Human-readable asset name (auto-decoded from hex if omitted) */
   asset_name_decoded?: string;
-  /** Decimals Number of decimal places */
   decimals?: number;
-  /** Name Display name for the token */
   name?: string;
-  /** PolicyId Cardano policy ID — exactly 56 hex characters */
   policy_id?: string;
-  /** Ticker Token ticker symbol (e.g., ANDA) */
   ticker?: string;
 }
 
@@ -2214,7 +2210,8 @@ export interface ResendVerificationResponse {
 export interface ReviewAssignmentCommitmentV2Request {
   course_id?: string;
   course_module_code?: string;
-  decision?: ReviewAssignmentCommitmentV2RequestDecision;
+  /** Decision "accept" or "refuse" */
+  decision?: string;
   participant_alias?: string;
   pending_tx_hash?: string;
 }
@@ -2297,10 +2294,10 @@ export interface SignatureData {
   signature: string;
 }
 
-export interface SltV2 {
+export interface SltV2Output {
   created_by_alias?: string;
-  lesson?: LessonV2;
-  /** SltIndex 1-based SLT index (starts at 1, not 0) */
+  lesson?: LessonV2Output;
+  /** SltIndex 1-based */
   slt_index?: number;
   slt_text?: string;
 }
@@ -2440,15 +2437,10 @@ export interface StudentDashboard {
 }
 
 export interface SubmitAssignmentCommitmentV2Request {
-  /** CourseId The course ID (policy ID) */
   course_id?: string;
-  /** Evidence Tiptap JSON evidence content */
-  evidence?: Record<string, any>;
-  /** EvidenceHash Hash of the evidence for on-chain verification */
+  evidence?: JSONMap;
   evidence_hash?: string;
-  /** PendingTxHash The pending transaction hash */
   pending_tx_hash?: string;
-  /** SltHash The SLT hash identifying the module (on-chain identifier) */
   slt_hash?: string;
 }
 
@@ -2662,42 +2654,6 @@ export interface TooManyRequestsErrorResponse {
   status_code: number;
 }
 
-/** Statistics about the TX State Machine for monitoring and debugging. */
-export interface TxStatsResponse {
-  /**
-   * Number of transactions confirmed on-chain
-   * @example 142
-   */
-  confirmed_count?: number;
-  /**
-   * Number of expired transactions (not confirmed within timeout)
-   * @example 0
-   */
-  expired_count?: number;
-  /**
-   * Number of failed transactions
-   * @example 2
-   */
-  failed_count?: number;
-  /**
-   * Number of transactions in pending state
-   * @example 5
-   */
-  pending_count?: number;
-  /**
-   * Current length of the confirmation queue
-   * @example 3
-   */
-  queue_length?: number;
-  /** Breakdown of pending transactions by type */
-  type_breakdown?: Record<string, number>;
-  /**
-   * Number of transactions with completed DB updates
-   * @example 140
-   */
-  updated_count?: number;
-}
-
 export interface UnauthorizedErrorResponse {
   details?: string;
   /** @example "Unauthorized: Invalid or missing credentials." */
@@ -2733,7 +2689,7 @@ export interface UnsignedTxResponseInitProject {
 export interface UpdateAssignmentCommitmentV2Request {
   course_id?: string;
   course_module_code?: string;
-  evidence?: Record<string, any>;
+  evidence?: JSONMap;
   evidence_hash?: string;
 }
 
@@ -2757,7 +2713,7 @@ export interface UpdateModuleStatusRequest {
 
 export interface UpdateModuleV2 {
   allowed_student_state_ids?: string[];
-  prereq_slt_hashes?: string[];
+  prereq_credential_hashes?: string[];
   /** Hex-encoded hash of the SLT (exactly 64 characters). */
   slt_hash?: string;
 }

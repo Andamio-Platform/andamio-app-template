@@ -226,6 +226,7 @@ export function ContentEditor({
           "prose prose-sm sm:prose-base max-w-none dark:prose-invert",
           "focus:outline-none",
           "min-h-full",
+          "text-foreground",
 
           // Headings - distinct size hierarchy with proper spacing
           "prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground",

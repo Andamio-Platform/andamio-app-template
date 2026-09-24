@@ -174,7 +174,7 @@ export function MintModuleTokens({
     const modules_to_mint = modulesWithData.map((m) => ({
       slts: m.slts,
       allowed_student_state_ids: [] as string[],
-      prereq_slt_hashes: [] as string[],
+      prereq_credential_hashes: [] as string[],
     }));
 
     await execute({

@@ -129,6 +129,7 @@ interface AndamioAuthContextType {
   user: AuthUser | null;
   jwt: string | null;
   isAuthenticating: boolean;
+  isRestoringSession: boolean;
   authError: string | null;
   isWalletConnected: boolean;
   popupBlocked: boolean;
@@ -167,14 +168,16 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
   const [user, setUser] = useState<AuthUser | null>(null);
   const [jwt, setJwt] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isRestoringSession, setIsRestoringSession] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [popupBlocked, setPopupBlocked] = useState(false);
   // Track if JWT validation is in progress
   const isValidatingJWTRef = useRef(false);
 
-  // Helper to update ref
+  // Helper to update ref and state together
   const setValidatingJWT = useCallback((value: boolean) => {
     isValidatingJWTRef.current = value;
+    setIsRestoringSession(value);
   }, []);
 
   // Validate stored JWT against connected wallet
@@ -191,7 +194,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       return;
     }
 
-    isValidatingJWTRef.current = true;
+    setValidatingJWT(true);
 
     const validateStoredJWT = async () => {
 
@@ -602,6 +605,7 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
         user,
         jwt,
         isAuthenticating,
+        isRestoringSession,
         authError,
         isWalletConnected: connected,
         popupBlocked,
@@ -624,6 +628,7 @@ const defaultContextValue: AndamioAuthContextType = {
   user: null,
   jwt: null,
   isAuthenticating: false,
+  isRestoringSession: false,
   authError: null,
   isWalletConnected: false,
   popupBlocked: false,

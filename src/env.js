@@ -11,11 +11,6 @@ export const env = createEnv({
     // API key for server-side requests to Andamio Gateway
     // This key is used for all proxied requests - usage is billed to the app developer
     ANDAMIO_API_KEY: z.string().min(1),
-    // UTXOS/Web3 SDK — server-side only (developer-controlled wallets)
-    WEB3_SDK_API_KEY: z.string().optional(),
-    WEB3_SDK_PRIVATE_KEY: z.string().optional(),
-    // UTXOS Sponsorship ID — for gasless access token migration
-    UTXOS_SPONSORSHIP_ID: z.string().optional(),
   },
 
   /**
@@ -50,9 +45,6 @@ export const env = createEnv({
     NEXT_PUBLIC_BLOCKFROST_PROJECT_ID: process.env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID,
     NEXT_PUBLIC_WEB3_SDK_PROJECT_ID: process.env.NEXT_PUBLIC_WEB3_SDK_PROJECT_ID,
     NEXT_PUBLIC_WEB3_SDK_NETWORK: process.env.NEXT_PUBLIC_WEB3_SDK_NETWORK,
-    WEB3_SDK_API_KEY: process.env.WEB3_SDK_API_KEY,
-    WEB3_SDK_PRIVATE_KEY: process.env.WEB3_SDK_PRIVATE_KEY,
-    UTXOS_SPONSORSHIP_ID: process.env.UTXOS_SPONSORSHIP_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

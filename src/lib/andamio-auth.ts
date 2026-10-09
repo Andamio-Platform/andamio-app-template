@@ -2,7 +2,6 @@ import { env } from "~/env";
 import { authLogger } from "~/lib/debug-logger";
 import { extractAliasFromUnit } from "~/lib/access-token-utils";
 import { withTimeout } from "~/lib/promise-utils";
-import type { SecureLoginResponse } from "~/types/generated";
 
 /**
  * Andamio Authentication Service (V2)
@@ -313,6 +312,21 @@ export interface DevLoginResult {
   user_id: string;
   alias: string;
   tier: string;
+}
+
+/**
+ * Response from /v2/auth/developer/login/complete and /v2/auth/developer/token/refresh.
+ *
+ * Defined locally because the gateway's public spec (swagger.public.json, v2.5.5)
+ * no longer includes developer auth endpoints, though they are still live.
+ * Mirrors the shape last generated from the gateway spec at v2.5.2.
+ */
+interface SecureLoginResponse {
+  alias?: string;
+  jwt?: { expires_at: string; token: string };
+  refresh_token?: { expires_at?: string; token?: string };
+  tier?: string;
+  user_id?: string;
 }
 
 /**

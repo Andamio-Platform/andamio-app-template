@@ -177,67 +177,12 @@ export type {
 } from "./gateway";
 
 // =============================================================================
-// Auth Types (clean names from v2.1.0)
+// Auth Types
 // =============================================================================
+// Developer auth, API key and billing types are no longer in the public spec
+// (swagger.public.json, v2.5.5). See SecureLoginResponse in lib/andamio-auth.ts.
 
-export type {
-  // Developer registration (two-step flow)
-  RegisterSessionRequest,
-  RegisterSessionResponse,
-  RegisterCompleteRequest,
-  RegisterResponse,
-  SignatureData,
-
-  // Developer login
-  JWTResponse,
-} from "./gateway";
-
-// =============================================================================
-// API Key Types (clean names from v2.1.0)
-// =============================================================================
-
-export type {
-  APIKeyRequest,
-  APIKeyResponse,
-  DeleteAPIKeyRequest,
-  DeleteAPIKeyResponse,
-  RotateAPIKeyRequest,
-  RotateAPIKeyResponse,
-} from "./gateway";
-
-// =============================================================================
-// Developer Auth Types (CIP-30 secure login + refresh tokens, v2.3)
-// =============================================================================
-
-export type {
-  LoginCompleteRequest,
-  LoginSessionRequest,
-  LoginSessionResponse,
-  RefreshRequest,
-  RefreshTokenData,
-  SecureLoginResponse,
-} from "./gateway";
-
-// Developer profile type (returned from /v2/apikey/developer/profile/get)
-export type { MeResponse as DeveloperProfileResponse } from "./gateway";
-
-// Developer usage type (returned from /v2/apikey/developer/usage/get)
-export type { UsageResponse as DeveloperUsageResponse } from "./gateway";
-
-// =============================================================================
-// Billing Types (Stripe subscription billing)
-// =============================================================================
-
-export type {
-  BillingStatusResponse,
-  BillingStatusResponseEnvelope,
-  CheckoutRequest,
-  CheckoutResponse,
-  CheckoutResponseEnvelope,
-  PortalResponse,
-  PortalResponseEnvelope,
-  SubscriptionStatus,
-} from "./gateway";
+export type { SignatureData } from "./gateway";
 
 // =============================================================================
 // Dashboard Types (clean names from v2.1.0)

@@ -19,57 +19,6 @@ export enum CourseModuleStatusV2 {
   CourseModuleStatusV2PendingTx = "PENDING_TX",
 }
 
-export interface APIKeyMetadata {
-  /** CreatedAt is the key creation timestamp. */
-  created_at?: string;
-  /** ID is the API key UUID. */
-  id?: string;
-  /** IsActive indicates whether the key is currently active. */
-  is_active?: boolean;
-  /** Kind is the key type: 'developer' or 'enterprise'. */
-  kind?: string;
-  /** Prefix is the first 12 characters of the key (without the plaintext key itself). */
-  prefix?: string;
-  /**
-   * Role is the capability level within the account ('admin' or 'member'), or
-   * empty for developer keys not associated with an account.
-   */
-  role?: string;
-}
-
-export interface APIKeyRequest {
-  /**
-   * @minLength 3
-   * @maxLength 64
-   * @example "MyFirstKey"
-   */
-  api_key_name: string;
-  /**
-   * @min 1
-   * @example 365
-   */
-  expires_in_days?: number;
-}
-
-export interface APIKeyResponse {
-  /** @example "ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" */
-  api_key: string;
-  /** @example "2025-08-31T23:59:59Z" */
-  created_at: string;
-  /** @example "2026-08-31T23:59:59Z" */
-  expires_at: string;
-  /** @example 365 */
-  expires_in_days: number;
-  /** @example true */
-  is_active: boolean;
-  /** @example "MyFirstKey" */
-  name: string;
-}
-
-export interface AddCourseIDRequest {
-  course_id: string;
-}
-
 export interface AddFundsTxRequest {
   /**
    * Plain text alias. Any characters allowed.
@@ -174,23 +123,6 @@ export interface AggregateUpdateModuleV2Response {
 export interface AliasExistsResponse {
   alias?: string;
   exists?: boolean;
-}
-
-export interface AllocationMetadata {
-  active?: boolean;
-  api_key_id?: string;
-  costs?: Record<string, any>;
-  course_ids?: string[];
-  created_at?: string;
-  /** ID is the opaque db-api allocation identifier (CUID, not UUID; api#532). */
-  id?: string;
-  kind?: string;
-  quota?: number;
-  revoked_at?: string;
-  route_key?: string;
-  scope_kind?: string;
-  updated_at?: string;
-  used?: number;
 }
 
 export interface AssessAssignmentsTxRequest {
@@ -312,33 +244,6 @@ export interface BadRequestResponse {
   status_code: number;
 }
 
-export interface BillingStatusResponse {
-  api?: SubscriptionStatus;
-  platform?: SubscriptionStatus;
-}
-
-/** Standard API response envelope for billing status */
-export interface BillingStatusResponseEnvelope {
-  data: BillingStatusResponse;
-}
-
-export interface CheckoutRequest {
-  /** @example "api" */
-  product: "api";
-  /** @example "starter" */
-  tier: string;
-}
-
-export interface CheckoutResponse {
-  /** @example "https://checkout.stripe.com/c/pay/cs_xxx" */
-  url: string;
-}
-
-/** Standard API response envelope for checkout session */
-export interface CheckoutResponseEnvelope {
-  data: CheckoutResponse;
-}
-
 export interface ClaimCourseCredentialsTxRequest {
   /**
    * Plain text alias. Any characters allowed.
@@ -382,15 +287,6 @@ export interface ClaimV2AccessTokenTxRequest {
    * @example "JohnDoe"
    */
   alias?: string;
-}
-
-export interface CleanerStatsView {
-  candidates?: number;
-  deleted?: number;
-  dry_run?: boolean;
-  errored?: number;
-  operation_id?: string;
-  skipped?: number;
 }
 
 export interface CommitAssignmentTxRequest {
@@ -576,14 +472,6 @@ export interface CourseContentInput {
   video_url?: string;
 }
 
-export interface CourseMembershipResponse {
-  account_id?: string;
-  course_ids?: string[];
-  created_at?: string;
-  id?: string;
-  updated_at?: string;
-}
-
 export interface CourseModule {
   created_by?: string;
   prerequisites?: string[];
@@ -621,23 +509,6 @@ export interface CourseModuleV2Output {
   slts?: SltV2Output[];
   title?: string;
   video_url?: string;
-}
-
-export interface CreateAllocationRequest {
-  api_key_id?: string;
-  costs?: Record<string, any>;
-  course_ids?: string[];
-  /** "developer" or "enterprise" */
-  kind?: string;
-  route_key?: string;
-  /** "course" or "route" */
-  scope_kind?: string;
-  total_quota?: number;
-}
-
-export interface CreateAllocationResponse {
-  allocation?: AllocationMetadata;
-  cross_env_operation_id?: string;
 }
 
 export interface CreateCourseRequest {
@@ -733,13 +604,6 @@ export interface CredentialModuleInfo {
   title?: string;
 }
 
-export interface CrossEnvKeyMetadata {
-  /** "mainnet", "preprod", etc. */
-  source_env?: string;
-  /** Hashed key from source environment */
-  source_key?: string;
-}
-
 export interface DashboardCommitmentSummary {
   course_id?: string;
   slt_hash?: string;
@@ -822,29 +686,6 @@ export interface DashboardUser {
   wallet_address?: string;
 }
 
-export type DeactivateAPIKeyRequest = object;
-
-export interface DeactivateAPIKeyResponse {
-  cross_env_operation_id?: string;
-  is_active?: boolean;
-  key_id?: string;
-  updated_at?: string;
-}
-
-export interface DeleteAPIKeyRequest {
-  /**
-   * @minLength 3
-   * @maxLength 64
-   * @example "MyFirstKey"
-   */
-  api_key_name: string;
-}
-
-export interface DeleteAPIKeyResponse {
-  /** @example "API key deleted successfully" */
-  confirmation: string;
-}
-
 export interface DeleteModuleV2Request {
   course_id?: string;
   course_module_code?: string;
@@ -855,19 +696,6 @@ export interface DeleteTaskRequest {
   contributor_state_id: string;
   /** @example 0 */
   index: number;
-}
-
-export interface EmailVerificationStatusResponse {
-  /** @example true */
-  can_resend?: boolean;
-  /** @example false */
-  email_verified?: boolean;
-  /** @example 4 */
-  remaining_attempts?: number;
-  /** @example "2026-02-09T14:30:00Z" */
-  verification_email_sent_at?: string;
-  /** @example 0 */
-  wait_duration_seconds?: number;
 }
 
 /** Error details with code, message, and optional debug info */
@@ -890,21 +718,9 @@ export interface ErrorDetail {
 }
 
 /** Standard error response envelope */
-export interface ErrorEnvelope {
-  /** Error details with code, message, and optional debug info */
-  error: ErrorDetail;
-}
-
-/** Standard error response envelope */
 export interface ErrorResponse {
   /** Error details with code, message, and optional debug info */
   error: ErrorDetail;
-}
-
-export interface FederatedCleanupCandidate {
-  created_at?: string;
-  user_id?: string;
-  wallet_address?: string;
 }
 
 export interface ForbiddenErrorResponse {
@@ -913,11 +729,6 @@ export interface ForbiddenErrorResponse {
   message: string;
   /** @example 403 */
   status_code: number;
-}
-
-export interface GetAllocationResponse {
-  allocation?: AllocationMetadata;
-  cross_env_operation_id?: string;
 }
 
 export interface GetContributorCommitmentRequest {
@@ -931,25 +742,6 @@ export interface GetStudentAssignmentCommitmentRequest {
   course_module_code?: string;
   /** On-chain hash - required for on-chain lookup */
   slt_hash?: string;
-}
-
-export interface GoneErrorResponse {
-  details?: string;
-  /** @example "Gone - The requested resource is no longer available." */
-  message: string;
-  /** @example 410 */
-  status_code: number;
-}
-
-export interface InitialAllocationSpec {
-  costs?: Record<string, any>;
-  course_ids?: string[];
-  /** "developer" or "enterprise" */
-  kind?: string;
-  route_key?: string;
-  /** "course" or "route" */
-  scope_kind?: string;
-  total_quota?: number;
 }
 
 export interface InternalServerErrorResponse {
@@ -972,52 +764,6 @@ export interface IntroductionV2Output {
 
 export type JSONMap = Record<string, any>;
 
-/** A single JSON Web Key (JWK) as defined in RFC 7517. */
-export interface JWK {
-  /**
-   * Alg is the algorithm intended for use with the key
-   * @example "RS256"
-   */
-  alg?: string;
-  /**
-   * E is the RSA exponent (base64url-encoded)
-   * @example "AQAB"
-   */
-  e?: string;
-  /**
-   * Kid is a key identifier used to match a specific key
-   * @example "andamio-api-attestation-key"
-   */
-  kid?: string;
-  /**
-   * Kty is the key type (always "RSA" for our keys)
-   * @example "RSA"
-   */
-  kty?: string;
-  /**
-   * N is the RSA modulus (base64url-encoded)
-   * @example "0vx7agoebGcQ..."
-   */
-  n?: string;
-  /**
-   * Use indicates the intended use of the key ("sig" for signature verification)
-   * @example "sig"
-   */
-  use?: string;
-}
-
-/** JSON Web Key Set containing public keys for JWT verification. */
-export interface JWKSResponse {
-  keys?: JWK[];
-}
-
-export interface JWTResponse {
-  /** @example "2025-09-01T23:59:59Z" */
-  expires_at: string;
-  /** @example "eyJhbGci..." */
-  token: string;
-}
-
 export interface KeyListItem {
   created_at?: string;
   environment?: string;
@@ -1034,42 +780,6 @@ export interface LessonV2Output {
   is_live?: boolean;
   title?: string;
   video_url?: string;
-}
-
-export interface ListAccountAPIKeysResponse {
-  account_id?: string;
-  keys?: APIKeyMetadata[];
-}
-
-export interface ListAccountAuditMeta {
-  pagination?: PaginationMeta;
-}
-
-export interface ListAccountAuditResponse {
-  account_id?: string;
-  audits?: SponsorshipAuditRecord[];
-  meta?: ListAccountAuditMeta;
-}
-
-export interface ListAccountOpUsageResponse {
-  account_id?: string;
-  usage?: OpUsageBucket[];
-}
-
-export interface ListAllocationsResponse {
-  allocations?: AllocationMetadata[];
-  api_key_id?: string;
-  cross_env_operation_id?: string;
-}
-
-export interface ListKeysKeyMetadata {
-  created_at?: string;
-  expires_at?: string;
-  is_active?: boolean;
-  key_id?: string;
-  name?: string;
-  prefix?: string;
-  source?: string;
 }
 
 export interface ListKeysResponse {
@@ -1100,13 +810,6 @@ export interface ListTeacherCourseModulesRequest {
   course_id?: string;
 }
 
-export interface LoginCompleteRequest {
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  session_id: string;
-  /** CIP-30 signature data from a Cardano wallet, containing the COSE_Sign1 signature and COSE_Key. */
-  signature: SignatureData;
-}
-
 export interface LoginSession {
   /** @example "2025-01-24T12:00:00Z" */
   expires_at: string;
@@ -1114,30 +817,6 @@ export interface LoginSession {
   id: string;
   /** @example "abc123xyz" */
   nonce: string;
-}
-
-export interface LoginSessionRequest {
-  /**
-   * @minLength 1
-   * @maxLength 32
-   * @example "johndoe"
-   */
-  alias: string;
-  /**
-   * @minLength 103
-   * @maxLength 108
-   * @example "addr1q..."
-   */
-  wallet_address: string;
-}
-
-export interface LoginSessionResponse {
-  /** @example "2026-05-05T12:35:00Z" */
-  expires_at?: string;
-  /** @example "Sign this message to login to Andamio: abc123..." */
-  nonce?: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  session_id?: string;
 }
 
 export interface ManageContributorBlacklistTxRequest {
@@ -1295,18 +974,6 @@ export interface ManagerProjectsResponse {
   data: ManagerProjectListItem[];
   /** Optional metadata for API responses */
   meta?: Meta;
-}
-
-export interface MeResponse {
-  active_keys?: APIKeyResponse[];
-  /** @example "johndoe" */
-  alias: string;
-  /** @example "2025-08-31T23:59:59Z" */
-  created_at: string;
-  /** @example "Free" */
-  tier: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  user_id: string;
 }
 
 export interface MergedAssignmentContent {
@@ -1664,18 +1331,6 @@ export interface NotFoundErrorResponse {
   status_code: number;
 }
 
-export interface OpUsageBucket {
-  /** Count is the number of builds in this (op_name, status) bucket. */
-  count?: number;
-  /**
-   * OpName is the observability label recorded at build time (e.g.
-   * "evidence-approve", "create-course") — see models.SponsorshipBuild.OpName.
-   */
-  op_name?: string;
-  /** Status is the build's lifecycle status ("BUILT", "SUBMITTED", "CONFIRMED", "FAILED"). */
-  status?: string;
-}
-
 /** Pagination metadata for list endpoints */
 export interface Pagination {
   /**
@@ -1693,22 +1348,6 @@ export interface Pagination {
    * @example 100
    */
   total: number;
-}
-
-export interface PaginationMeta {
-  has_more?: boolean;
-  next_cursor?: number;
-}
-
-export interface PatchAllocationRequest {
-  costs?: Record<string, any>;
-  kind?: string;
-  total_quota?: number;
-}
-
-export interface PatchAllocationResponse {
-  allocation?: AllocationMetadata;
-  cross_env_operation_id?: string;
 }
 
 export interface PendingAssessmentSummary {
@@ -1801,41 +1440,6 @@ export interface PendingTxResponse {
   user_id?: string;
 }
 
-export interface PlanTier {
-  checkout_keys?: Record<string, string>;
-  /** @example 2500 */
-  daily_quota?: number;
-  /** @example "For developers building on the Andamio protocol." */
-  description?: string;
-  /** @example 2 */
-  max_api_keys?: number;
-  /** @example 75000 */
-  monthly_quota?: number;
-  /** @example "starter" */
-  name?: string;
-  /** @example 50 */
-  rate_limit_per_minute?: number;
-}
-
-export interface PlansResponse {
-  plans?: PlanTier[];
-}
-
-/** Standard API response envelope for available plans */
-export interface PlansResponseEnvelope {
-  data: PlansResponse;
-}
-
-export interface PortalResponse {
-  /** @example "https://billing.stripe.com/p/session/xxx" */
-  url: string;
-}
-
-/** Standard API response envelope for portal session */
-export interface PortalResponseEnvelope {
-  data: PortalResponse;
-}
-
 export interface PostProjectContributorCommitmentDeleteJSONRequestBody {
   task_hash?: string;
 }
@@ -1849,13 +1453,6 @@ export interface PostProjectContributorCommitmentSubmitJSONRequestBody {
 
 export interface PostUserAccessTokenAliasJSONRequestBody {
   access_token_alias?: string;
-}
-
-export interface PreviewCandidatesResponse {
-  candidates?: FederatedCleanupCandidate[];
-  count?: number;
-  cross_env_operation_id?: string;
-  grace_period_minutes?: number;
 }
 
 export interface Project {
@@ -1884,6 +1481,11 @@ export interface ProjectAssessmentOnChain {
 }
 
 export interface ProjectContent {
+  /**
+   * The project's configured commission rate on task reward payouts, as a decimal fraction (0.05 = 5%). Not included in the user projects list; absent with the rest of content when source is chain_only.
+   * @example 0.05
+   */
+  commission_rate?: number;
   description?: string;
   image_url?: string;
   title?: string;
@@ -1963,49 +1565,6 @@ export interface ProjectsDashboard {
   with_prerequisites?: DashboardProjectWithPrereqs[];
 }
 
-export interface ProvisionEnterpriseKeyRequest {
-  /**
-   * Bucket M5: multi-key account attachment (enterprise keys only).
-   * AccountID attaches the key to an existing account (multi-key path).
-   * If omitted, a new account is created for the key (auto-generated single-key account).
-   */
-  account_id?: string;
-  /**
-   * AccountName is the human-readable name for a newly created enterprise account.
-   * Only used when AccountID is omitted (auto-generated single-key account path).
-   * If not provided, defaults to a generated name. Ignored on the multi-key path.
-   */
-  account_name?: string;
-  cross_env_key_metadata?: CrossEnvKeyMetadata;
-  initial_allocations?: InitialAllocationSpec[];
-  /** "developer" or "enterprise" */
-  kind?: string;
-  /**
-   * Role is the capability level within the account ('admin' or 'member').
-   * Defaults to 'admin' if omitted. Only valid for enterprise keys.
-   */
-  role?: string;
-}
-
-export interface ProvisionEnterpriseKeyResponse {
-  /** Bucket M5: account ownership and role (enterprise keys only). */
-  account_id?: string;
-  allocations?: AllocationMetadata[];
-  cross_env_operation_id?: string;
-  /**
-   * Key is the one-time plaintext X-API-Key — present only on 201, cryptographically
-   * unrecoverable afterward (only the hash is stored). Full semantics: INTERNAL_AUTH.md §1.3.
-   * @example "ant_mn_xxxxxxxxxxxxxxxxxxxxxxxx"
-   */
-  key?: string;
-  key_id?: string;
-  kind?: string;
-  /** "admin" or "member" */
-  role?: string;
-  /** Only present on 422 (partial failure) */
-  rolled_back?: RollbackDetail;
-}
-
 export interface PublicCourseModuleItem {
   /** Off-chain content (from DB API) */
   content?: PublicModuleContent;
@@ -2051,26 +1610,6 @@ export interface QualifiedContributorsResponse {
 
 export interface QualifiedContributorsResponseEnvelope {
   data: QualifiedContributorsResponse;
-}
-
-export interface RefreshRequest {
-  /** @example "a3f1c2d4e5b6..." */
-  refresh_token: string;
-}
-
-/** Refresh token data included in login and refresh responses */
-export interface RefreshTokenData {
-  /** @example "2026-06-04T12:30:00Z" */
-  expires_at?: string;
-  /** @example "a3f1c2d4e5b6..." */
-  token?: string;
-}
-
-export interface RegisterCompleteRequest {
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  session_id: string;
-  /** CIP-30 signature data from a Cardano wallet, containing the COSE_Sign1 signature and COSE_Key. */
-  signature: SignatureData;
 }
 
 export interface RegisterCourseV2Request {
@@ -2141,72 +1680,6 @@ export interface RegisterProjectV2Request {
   title?: string;
 }
 
-export interface RegisterResponse {
-  /** @example "johndoe" */
-  alias?: string;
-  /** @example "2026-08-31T23:59:59Z" */
-  subscription_expiration?: string;
-  /** @example "Free" */
-  tier?: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  user_id?: string;
-}
-
-export interface RegisterSessionRequest {
-  /**
-   * @minLength 1
-   * @maxLength 32
-   * @example "johndoe"
-   */
-  alias: string;
-  /**
-   * @minLength 1
-   * @maxLength 254
-   * @example "john.doe@example.com"
-   */
-  email: string;
-  /**
-   * @minLength 103
-   * @maxLength 108
-   * @example "addr1q..."
-   */
-  wallet_address: string;
-}
-
-export interface RegisterSessionResponse {
-  /** @example "2026-01-22T15:30:00Z" */
-  expires_at?: string;
-  /** @example "Please sign this message to verify wallet ownership: abc123..." */
-  nonce?: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  session_id?: string;
-}
-
-export interface RegisterTokenRequest {
-  asset_name?: string;
-  asset_name_decoded?: string;
-  decimals?: number;
-  name?: string;
-  policy_id?: string;
-  ticker?: string;
-}
-
-export interface RegisteredSltItem {
-  /** 1-based index */
-  slt_index?: number;
-  /** The SLT content */
-  slt_text?: string;
-}
-
-export interface ResendVerificationResponse {
-  /** @example "Verification email sent" */
-  message?: string;
-  /** @example "2026-02-09T15:30:00Z" */
-  next_resend_available_at?: string;
-  /** @example 4 */
-  remaining_attempts?: number;
-}
-
 export interface ReviewAssignmentCommitmentV2Request {
   course_id?: string;
   course_module_code?: string;
@@ -2214,68 +1687,6 @@ export interface ReviewAssignmentCommitmentV2Request {
   decision?: string;
   participant_alias?: string;
   pending_tx_hash?: string;
-}
-
-export interface RevokeAllocationRequest {
-  kind?: string;
-}
-
-export interface RevokeAllocationResponse {
-  allocation?: AllocationMetadata;
-  cross_env_operation_id?: string;
-}
-
-export interface RevokeKeyResponse {
-  cross_env_operation_id?: string;
-  environment?: string;
-  key_id?: string;
-  revoked_at?: string;
-}
-
-export interface RollbackDetail {
-  /** AllocationID is the opaque db-api allocation identifier (CUID, not UUID; api#532). */
-  allocation_id?: string;
-  error?: string;
-}
-
-export interface RotateAPIKeyRequest {
-  /**
-   * @minLength 3
-   * @maxLength 64
-   * @example "MyFirstKey"
-   */
-  api_key_name: string;
-  /**
-   * @min 1
-   * @example 365
-   */
-  expires_in_days?: number;
-}
-
-export interface RotateAPIKeyResponse {
-  /** @example "API key expiration extended to 2026-08-31T23:59:59Z" */
-  confirmation: string;
-}
-
-export interface RunCleanupOnceRequest {
-  dry_run?: boolean;
-}
-
-export interface RunCleanupOnceResponse {
-  cross_env_operation_id?: string;
-  stats?: CleanerStatsView;
-}
-
-export interface SecureLoginResponse {
-  /** @example "johndoe" */
-  alias?: string;
-  jwt?: JWTResponse;
-  /** Refresh token data included in login and refresh responses */
-  refresh_token?: RefreshTokenData;
-  /** @example "pioneer" */
-  tier?: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  user_id?: string;
 }
 
 export interface ServiceUnavailableErrorResponse {
@@ -2312,18 +1723,6 @@ export interface SponsorData {
    * Do not pick arbitrary UTxOs — the sponsorship contract requires this exact reference.
    */
   static_utxo_ref: string;
-}
-
-export interface SponsorshipAuditRecord {
-  allocation_id?: string;
-  api_key_id?: string;
-  at?: string;
-  /** "build_recorded", "build_consumed", etc. */
-  event?: string;
-  id?: number;
-  /** "developer" or "enterprise" */
-  kind?: string;
-  tx_hash?: string;
 }
 
 /** Request to start an Access Token ownership verification session. */
@@ -2442,17 +1841,6 @@ export interface SubmitAssignmentCommitmentV2Request {
   evidence_hash?: string;
   pending_tx_hash?: string;
   slt_hash?: string;
-}
-
-export interface SubscriptionStatus {
-  /** @example false */
-  cancel_at_period_end?: boolean;
-  /** @example "2026-04-18T00:00:00Z" */
-  current_period_end?: string;
-  /** @example "active" */
-  status?: string;
-  /** @example "starter" */
-  tier?: string;
 }
 
 export interface SuccessResponse {
@@ -2610,37 +1998,6 @@ export interface TeacherDashboard {
   total_pending_reviews?: number;
 }
 
-/** Single registered native asset token */
-export interface TokenDetailResponse {
-  data: TokenRegistryEntry;
-  /** Optional metadata for API responses */
-  meta?: Meta;
-}
-
-/** List of registered native asset tokens */
-export interface TokenListResponse {
-  data: TokenRegistryEntry[];
-  /** Optional metadata for API responses */
-  meta?: Meta;
-}
-
-export interface TokenRegistryEntry {
-  /** @example "416e64616d696f546f6b656e" */
-  asset_name: string;
-  /** @example "AndamioToken" */
-  asset_name_decoded: string;
-  /** @example 6 */
-  decimals?: number;
-  /** @example "Andamio Token" */
-  name?: string;
-  /** @example "f4c9f9c4252d86702c2f4c2e49e6648873ca2ac01c8b5c76f2d4da5f" */
-  policy_id: string;
-  /** @example "f4c9f9c4252d86702c2f4c2e49e6648873ca2ac01c8b5c76f2d4da5f416e64616d696f546f6b656e" */
-  subject: string;
-  /** @example "ANDA" */
-  ticker?: string;
-}
-
 export interface TokenResponse {
   expires_at: string;
   token: string;
@@ -2684,6 +2041,10 @@ export interface UnsignedTxResponseInitProject {
   /** This is the hash of a minting policy script. */
   project_id?: string;
   unsigned_tx?: string;
+}
+
+export interface UpdateAccessTokenAliasResponse {
+  access_token_alias?: string;
 }
 
 export interface UpdateAssignmentCommitmentV2Request {
@@ -2752,27 +2113,6 @@ export interface UpdateTaskRequest {
   tokens?: CreateTaskToken[];
 }
 
-export interface UsageResponse {
-  /** @example 50 */
-  daily_quota_consumed?: number;
-  /** @example 1000 */
-  daily_quota_limit?: number;
-  /** @example "2026-08-31T23:59:59Z" */
-  expiration?: string;
-  /** @example 500 */
-  monthly_quota_consumed?: number;
-  /** @example 10000 */
-  monthly_quota_limit?: number;
-  /** @example ["[\"100 req/min\""," \"1000 req/day\""," \"10000 req/month\"]"] */
-  rate_limit_windows?: string[];
-  /** @example 950 */
-  remaining_daily?: number;
-  /** @example 9500 */
-  remaining_monthly?: number;
-  /** @example "Free" */
-  subscription_tier?: string;
-}
-
 /** List of valid transaction types that can be registered with the TX State Machine. */
 export interface ValidTxTypesResponse {
   /**
@@ -2824,23 +2164,4 @@ export interface VerificationFailureResponse {
    * 	@example	false
    */
   verified?: boolean;
-}
-
-export interface VerifyEmailRequest {
-  /** @example "dGVzdC10b2tlbg==" */
-  token: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  token_id: string;
-}
-
-export interface VerifyEmailResponse {
-  /** @example "johndoe" */
-  alias?: string;
-  /** @example true */
-  email_verified?: boolean;
-  jwt?: JWTResponse;
-  /** @example "Email verified successfully" */
-  message?: string;
-  /** @example "a1b2c3d4-e5f6-7890-1234-567890abcdef" */
-  user_id?: string;
 }

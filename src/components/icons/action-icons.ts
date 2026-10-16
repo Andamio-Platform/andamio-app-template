@@ -87,3 +87,6 @@ export { ClipboardCheck as AssessIcon } from "lucide-react";
 
 /** Log Out - sign out / disconnect */
 export { LogOut as LogOutIcon } from "lucide-react";
+
+/** Feedback - report an issue or send feedback */
+export { MessageSquarePlus as FeedbackIcon } from "lucide-react";

@@ -219,11 +219,9 @@ function transformContributorCommitment(
   api: ContributorCommitmentItem
 ): ContributorCommitment {
   // Content may include pending_tx_hash not in the generated type
-  const content = api.content as
-    | (ContributorCommitmentItem["content"] & {
-        pending_tx_hash?: string;
-      })
-    | undefined;
+  const content:
+    | (ContributorCommitmentItem["content"] & { pending_tx_hash?: string })
+    | undefined = api.content;
 
   return {
     // Identifiers

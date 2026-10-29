@@ -340,7 +340,7 @@ export default function TaskDetailPage() {
             <AndamioCardDescription>Full task instructions and requirements</AndamioCardDescription>
           </AndamioCardHeader>
           <AndamioCardContent>
-            <ContentDisplay content={task.contentJson as JSONContent} />
+            <ContentDisplay content={task.contentJson} />
           </AndamioCardContent>
         </AndamioCard>
       )}
@@ -541,7 +541,7 @@ export default function TaskDetailPage() {
                 <AndamioText variant="small" className="font-medium mb-2">Submitted Evidence</AndamioText>
                 <div className="min-h-[100px] border rounded-lg bg-muted/20 p-4">
                   {activeCommitment?.evidence ? (
-                    <ContentViewer content={activeCommitment.evidence as JSONContent} />
+                    <ContentViewer content={activeCommitment.evidence} />
                   ) : (
                     <AndamioText variant="small" className="text-muted-foreground italic">
                       No evidence recorded
@@ -756,7 +756,7 @@ export default function TaskDetailPage() {
                   <div>
                     <AndamioText variant="small" className="font-medium mb-2">Your Evidence</AndamioText>
                     <ContentDisplay
-                      content={activeCommitment.evidence as JSONContent}
+                      content={activeCommitment.evidence}
                       variant="muted"
                     />
                   </div>

@@ -13,10 +13,6 @@ GATEWAY_URL="${NEXT_PUBLIC_ANDAMIO_GATEWAY_URL:-https://preprod.api.andamio.io}"
 # generic 404 handler) while a different Swagger UI instance (/issuer/v1/docs/)
 # still redirects fine.
 SPEC_URL="${GATEWAY_URL}/openapi/swagger.public.json"
-# swagger.public.json never populates info.version, so api-metadata.json's
-# version fields are pulled from the full spec instead - types themselves
-# still generate from SPEC_URL above.
-METADATA_SPEC_URL="${GATEWAY_URL}/openapi/swagger.json"
 OUTPUT_DIR="src/types/generated"
 METADATA_FILE="${OUTPUT_DIR}/api-metadata.json"
 
@@ -43,7 +39,7 @@ rm -f "${OUTPUT_DIR}/gateway.ts.bak"
 # CI's drift check. When this metadata was last generated is already
 # answered by `git log` on this file.
 node -e "
-  fetch('${METADATA_SPEC_URL}')
+  fetch('${SPEC_URL}')
     .then(r => r.json())
     .then(spec => {
       const fs = require('fs');

@@ -14,7 +14,7 @@
  * - use-project.ts owns: Project, ProjectDetail, Task, TaskCommitment, ProjectStatus
  * - use-project-owner.ts imports from use-project.ts
  * - use-project-manager.ts owns: ManagerProject, ManagerCommitment, PendingAssessment
- * - use-project-contributor.ts owns: ContributorProject, ContributorCommitment, MyCommitmentSummary
+ * - use-project-contributor.ts owns: ContributorProject, ContributorCommitment
  */
 
 export * from "./use-project";

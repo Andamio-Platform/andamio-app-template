@@ -6,18 +6,13 @@
 // TypeScript can't catch that on its own since nothing here is typed
 // against the spec.
 //
-// Uses the FULL spec (/openapi/swagger.json), not the public one
-// (/openapi/swagger.public.json) that generate-types.sh uses. The public
-// spec is a curated "contract approved" subset - a real, working route can
-// be absent from it just because it hasn't been allowlisted for external
-// docs yet, which would show up here as a false "missing" endpoint. The
-// full spec is what actually reflects whether a route exists on the
-// backend, which is the thing this check cares about.
+// Uses the public spec (/openapi/swagger.public.json), the same one
+// generate-types.sh reads. The gateway serves no other spec without auth.
 import { TRANSACTION_ENDPOINTS } from "../src/config/transaction-ui";
 
 const GATEWAY_URL =
   process.env.NEXT_PUBLIC_ANDAMIO_GATEWAY_URL ?? "https://preprod.api.andamio.io";
-const SPEC_URL = `${GATEWAY_URL}/openapi/swagger.json`;
+const SPEC_URL = `${GATEWAY_URL}/openapi/swagger.public.json`;
 
 async function main() {
   console.log(`Fetching OpenAPI spec from ${SPEC_URL}...`);

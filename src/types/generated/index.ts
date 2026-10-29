@@ -96,7 +96,6 @@ export type {
   ProjectCredentialClaimOnChain,
   TaskCommitmentContent,
   TaskContent,
-  MyCommitmentSummary,
   PendingAssessmentSummary,
 } from "./gateway";
 
@@ -173,7 +172,6 @@ export type {
   UpdateProjectRequest,
   CreateTaskRequest,
   UpdateTaskRequest,
-  UpdateTaskCommitmentRequest,
 } from "./gateway";
 
 // =============================================================================

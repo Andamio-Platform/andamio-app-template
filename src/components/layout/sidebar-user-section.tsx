@@ -6,6 +6,7 @@ import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioButton } from "~/components/andamio/andamio-button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { LogOutIcon } from "~/components/icons";
+import { FeedbackDialog } from "~/components/feedback/feedback-dialog";
 import { ConnectWalletButton } from "~/components/auth/connect-wallet-button";
 import { PendingTxIndicator } from "~/components/tx/pending-tx-indicator";
 import { truncateWalletAddress } from "~/config";
@@ -122,6 +123,9 @@ export function SidebarUserSection({
             </span>
           </div>
         </div>
+
+        {/* Report an Issue */}
+        <FeedbackDialog isExpanded={isExpanded} />
 
         {/* Sign Out Button */}
         {showDisconnect && (

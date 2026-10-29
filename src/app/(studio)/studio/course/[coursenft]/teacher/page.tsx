@@ -35,7 +35,6 @@ import {
   NextIcon,
 } from "~/components/icons";
 import { ContentDisplay } from "~/components/content-display";
-import type { JSONContent } from "@tiptap/core";
 import {
   useCourse,
   useTeacherAssignmentCommitments,
@@ -909,7 +908,7 @@ export default function TeacherDashboardPage() {
                 <AndamioLabel>Student Evidence</AndamioLabel>
                 {selectedCommitment.evidence ? (
                   <div className="border rounded-md">
-                    <ContentDisplay content={selectedCommitment.evidence as JSONContent} variant="muted" />
+                    <ContentDisplay content={selectedCommitment.evidence} variant="muted" />
                   </div>
                 ) : selectedCommitment.onChainContent ? (
                   <div className="py-4 px-3 border rounded-md bg-muted/20">

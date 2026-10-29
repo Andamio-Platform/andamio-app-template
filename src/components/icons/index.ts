@@ -121,6 +121,8 @@ export {
   AssessIcon,
   // Session Actions
   LogOutIcon,
+  // Feedback
+  FeedbackIcon,
 } from "./action-icons";
 
 // =============================================================================

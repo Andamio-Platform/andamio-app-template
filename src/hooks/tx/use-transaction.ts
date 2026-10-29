@@ -319,7 +319,7 @@ export function useTransaction() {
           txHash,
           success: true,
           blockchainExplorerUrl: explorerUrl,
-          apiResponse: apiResponse as Record<string, unknown>,
+          apiResponse: apiResponse,
           requiresDBUpdate: ui.requiresDBUpdate,
           requiresOnChainConfirmation: !!ui.requiresOnChainConfirmation,
         };

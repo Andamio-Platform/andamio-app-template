@@ -259,7 +259,7 @@ export function useLesson(
           "slt_index" in result ||
           "content" in result
         ) {
-          raw = result as Record<string, unknown>;
+          raw = result;
         }
       }
 
@@ -427,7 +427,7 @@ export function useIntroduction(
           "introduction_content" in result ||
           "content" in result
         ) {
-          raw = result as Record<string, unknown>;
+          raw = result;
         }
       }
 

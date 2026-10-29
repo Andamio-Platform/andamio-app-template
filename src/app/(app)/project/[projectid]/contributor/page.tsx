@@ -42,7 +42,6 @@ import { checkProjectEligibility } from "~/lib/project-eligibility";
 import { useQueryClient } from "@tanstack/react-query";
 import { projectContributorKeys } from "~/hooks/api/project/use-project-contributor";
 import { projectKeys } from "~/hooks/api/project/use-project";
-import type { JSONContent } from "@tiptap/core";
 
 /** Safely extract a string from a value that may be a string, object, or nullish (API nullable strings). */
 function safeString(value: string | object | undefined | null): string {
@@ -440,7 +439,7 @@ function MyContributionsContent() {
                     )}
                   </div>
                   <div className="min-h-[100px] border rounded-lg bg-muted/20 p-4">
-                    <ContentViewer content={activeCommitment.evidence as JSONContent} />
+                    <ContentViewer content={activeCommitment.evidence} />
                   </div>
                 </div>
               )}

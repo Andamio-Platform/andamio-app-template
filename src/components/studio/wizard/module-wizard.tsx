@@ -186,7 +186,7 @@ export function ModuleWizard({
                 "content_json" in lessonResult ||
                 "slt_index" in lessonResult
               ) {
-                rawLesson = lessonResult as Record<string, unknown>;
+                rawLesson = lessonResult;
               }
             }
 

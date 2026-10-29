@@ -124,9 +124,9 @@ export async function recoverProjectContributor(
   // Linkage check: only trust a commitment record that references THIS txHash.
   // content.pending_tx_hash is not on the generated type but is present at runtime
   // (see use-project-contributor.ts:254-259).
-  const content = item.content as
+  const content:
     | (ContributorCommitmentItem["content"] & { pending_tx_hash?: string })
-    | undefined;
+    | undefined = item.content;
   const matches =
     item.submission_tx === txHash || content?.pending_tx_hash === txHash;
   if (!matches) return { kind: "unresolved" };

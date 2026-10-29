@@ -308,58 +308,6 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
     }
   }, [connected, isAuthenticated]);
 
-  // Auto-authenticate when wallet connects without a valid stored JWT
-  // This triggers the sign message flow for new connections
-  useEffect(() => {
-    authLogger.debug("[Effect: autoAuth] Running - connected:", connected, "isAuthenticated:", isAuthenticated, "isAuthenticating:", isAuthenticating, "isValidatingJWT:", isValidatingJWTRef.current);
-
-    // Skip if wallet not connected
-    if (!connected || !wallet) {
-      return;
-    }
-
-    // Skip if already authenticated or authenticating
-    if (isAuthenticated || isAuthenticating) {
-      return;
-    }
-
-    // Skip if there was an auth error (user declined, etc.)
-    // Without this check, declining to sign causes an infinite loop of wallet popups
-    if (authError) {
-      return;
-    }
-
-    // Skip if popup was blocked - user needs to click retry manually
-    // Without this check, autoAuth re-triggers and creates an infinite loop
-    if (popupBlocked) {
-      return;
-    }
-
-    // Skip if we're still validating a stored JWT
-    if (isValidatingJWTRef.current) {
-      return;
-    }
-
-    // Check if there's a stored JWT that might be valid
-    const storedJWT = getStoredJWT();
-    if (storedJWT && !isJWTExpired(storedJWT)) {
-      // Let the validateJWT effect handle this
-      authLogger.debug("[Effect: autoAuth] Stored JWT exists, skipping auto-auth");
-      return;
-    }
-
-    // No valid JWT - trigger authentication after a short delay
-    // The delay gives the wallet extension time to fully initialize its CIP-30 API
-    // (on first page load, `connected` can fire before signData/getBalance are ready)
-    authLogger.info("[Effect: autoAuth] Wallet connected without valid JWT, scheduling authentication");
-    const timer = setTimeout(() => {
-      authLogger.info("[Effect: autoAuth] Triggering authentication");
-      void authenticate();
-    }, 500);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, isAuthenticated, isAuthenticating, authError, popupBlocked]);
-
   /**
    * Authenticate with connected wallet
    */
@@ -453,6 +401,58 @@ export function AndamioAuthProvider({ children }: { children: React.ReactNode })
       setIsAuthenticating(false);
     }
   }, [connected, wallet, walletName]);
+
+  // Auto-authenticate when wallet connects without a valid stored JWT
+  // This triggers the sign message flow for new connections
+  useEffect(() => {
+    authLogger.debug("[Effect: autoAuth] Running - connected:", connected, "isAuthenticated:", isAuthenticated, "isAuthenticating:", isAuthenticating, "isValidatingJWT:", isValidatingJWTRef.current);
+
+    // Skip if wallet not connected
+    if (!connected || !wallet) {
+      return;
+    }
+
+    // Skip if already authenticated or authenticating
+    if (isAuthenticated || isAuthenticating) {
+      return;
+    }
+
+    // Skip if there was an auth error (user declined, etc.)
+    // Without this check, declining to sign causes an infinite loop of wallet popups
+    if (authError) {
+      return;
+    }
+
+    // Skip if popup was blocked - user needs to click retry manually
+    // Without this check, autoAuth re-triggers and creates an infinite loop
+    if (popupBlocked) {
+      return;
+    }
+
+    // Skip if we're still validating a stored JWT
+    if (isValidatingJWTRef.current) {
+      return;
+    }
+
+    // Check if there's a stored JWT that might be valid
+    const storedJWT = getStoredJWT();
+    if (storedJWT && !isJWTExpired(storedJWT)) {
+      // Let the validateJWT effect handle this
+      authLogger.debug("[Effect: autoAuth] Stored JWT exists, skipping auto-auth");
+      return;
+    }
+
+    // No valid JWT - trigger authentication after a short delay
+    // The delay gives the wallet extension time to fully initialize its CIP-30 API
+    // (on first page load, `connected` can fire before signData/getBalance are ready)
+    authLogger.info("[Effect: autoAuth] Wallet connected without valid JWT, scheduling authentication");
+    const timer = setTimeout(() => {
+      authLogger.info("[Effect: autoAuth] Triggering authentication");
+      void authenticate();
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, isAuthenticated, isAuthenticating, authError, popupBlocked]);
 
   /**
    * Logout and clear auth state

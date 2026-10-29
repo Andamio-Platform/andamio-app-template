@@ -11,12 +11,9 @@
  */
 
 export enum CourseModuleStatusV2 {
-  CourseModuleStatusV2Approved = "APPROVED",
-  CourseModuleStatusV2Archived = "ARCHIVED",
-  CourseModuleStatusV2Deprecated = "DEPRECATED",
   CourseModuleStatusV2Draft = "DRAFT",
+  CourseModuleStatusV2Approved = "APPROVED",
   CourseModuleStatusV2OnChain = "ON_CHAIN",
-  CourseModuleStatusV2PendingTx = "PENDING_TX",
 }
 
 export interface AddFundsTxRequest {
@@ -171,27 +168,51 @@ export interface AssignmentActionTxRequest {
   sponsor_data?: SponsorData;
 }
 
-export interface AssignmentCommitment {
-  /** @example "submitted" */
-  assignment_commitment_status?: string;
-  assignment_evidence_hash?: string;
-  content?: AssignmentSubmissionInput;
-  course_id: string;
-  created_at?: string;
-  slt_hash: string;
-  student_address: string;
-  updated_at?: string;
-}
-
 export interface AssignmentCommitmentContent {
-  /** "accept" or "refuse" */
-  assessment_outcome?: string;
-  /** Hash for on-chain verification */
+  /** Andamio's canonical-v1 hash of the stored evidence, computed by Andamio when the evidence is saved. Callers do not set it. Evidence saved before Andamio computed this hash carries the hash the caller supplied. When no saved evidence matches the on-chain value, this is the on-chain value. */
   assignment_evidence_hash?: string;
-  /** DRAFT, SUBMITTED, APPROVED, etc. */
-  commitment_status?: string;
+  /** The teacher's decision, once assessed. */
+  assignment_outcome?: "accept" | "refuse";
+  /** Derived from the chain submission; absent when it could not be derived. */
+  commitment_status?:
+    | "AWAITING_SUBMISSION"
+    | "SUBMITTED"
+    | "ACCEPTED"
+    | "REFUSED"
+    | "LEFT"
+    | "CREDENTIAL_CLAIMED";
   /** JSON evidence data */
   evidence?: any;
+}
+
+export interface AssignmentCommitmentRecord {
+  /** Andamio's canonical-v1 hash of the stored evidence, computed by Andamio when the evidence is saved. Callers do not set it. Evidence saved before Andamio computed this hash carries the hash the caller supplied. When no saved evidence matches the on-chain value, this is the on-chain value. */
+  assignment_evidence_hash?: string;
+  /** The teacher's decision, once assessed. Absent when the chain status could not be read. */
+  assignment_outcome?: "accept" | "refuse";
+  /**
+   * Absent when the chain status could not be read.
+   * @example "SUBMITTED"
+   */
+  commitment_status?:
+    | "AWAITING_SUBMISSION"
+    | "SUBMITTED"
+    | "ACCEPTED"
+    | "REFUSED"
+    | "LEFT"
+    | "CREDENTIAL_CLAIMED";
+  /** @example "a1b2c3" */
+  course_id?: string;
+  /** @example "101" */
+  course_module_code?: string;
+  evidence?: Record<string, any>;
+  /** @example "learner1" */
+  participant_alias?: string;
+  /**
+   * The module's SLT hash, the credential the commitment is for. Empty while
+   * the module has none (not approved, or unpublished).
+   */
+  slt_hash?: string;
 }
 
 export interface AssignmentOutcome {
@@ -204,25 +225,18 @@ export interface AssignmentOutcome {
   outcome?: "accept" | "refuse";
 }
 
-export interface AssignmentSubmissionInput {
-  feedback?: string;
-  notes?: string;
-  submission_url?: string;
-}
-
 export interface AssignmentV2Output {
   content_json?: JSONMap;
   created_by_alias?: string;
   description?: string;
   image_url?: string;
-  is_live?: boolean;
   title?: string;
   video_url?: string;
 }
 
 export interface BadGatewayErrorResponse {
   details?: string;
-  /** @example "Bad Gateway: The upstream server returned an invalid response." */
+  /** @example "Bad Gateway: Data the request needs could not be read; retry later." */
   message: string;
   /** @example 502 */
   status_code: number;
@@ -305,7 +319,7 @@ export interface CommitAssignmentTxRequest {
    */
   course_id?: string;
   /**
-   * Hex-encoded hash of the task SLT (exactly 64 characters).
+   * Hex-encoded hash of the module's SLT list, which is also its on-chain token name (exactly 64 characters).
    * @example "a1b2c3d4e5f6..."
    */
   slt_hash?: string;
@@ -332,7 +346,7 @@ export interface CommitTaskTxRequest {
    */
   project_id?: string;
   /**
-   * Hex-encoded hash of the task SLT (exactly 64 characters).
+   * Hex-encoded identifier of the task as offered: its content, deadline, reward and native assets (exactly 64 characters).
    * @example "a1b2c3d4e5f6..."
    */
   task_hash?: string;
@@ -419,8 +433,6 @@ export interface ContributorProjectListItem {
   created_slot?: number;
   created_tx?: string;
   managers?: string[];
-  /** Contributor's own commitments */
-  my_commitments?: MyCommitmentSummary[];
   owner?: string;
   prerequisites?: ProjectPrerequisite[];
   project_address?: string;
@@ -446,7 +458,7 @@ export interface Course {
   created_tx?: string;
   /** @example "addr1_owner" */
   owner?: string;
-  /** @example "chain+db" */
+  /** @example "merged" */
   source: string;
   student_state_id?: string;
   teachers?: string[];
@@ -502,19 +514,15 @@ export interface CourseModuleV2Output {
   description?: string;
   image_url?: string;
   introduction?: IntroductionV2Output;
+  /** Read from chain; absent when the on-chain state could not be read. */
   is_live?: boolean;
+  /** Read from chain; absent when the on-chain state could not be read. */
   module_status?: CourseModuleStatusV2;
   /** SltHash Hash of SLT list, used as module token name */
   slt_hash?: string;
   slts?: SltV2Output[];
   title?: string;
   video_url?: string;
-}
-
-export interface CreateCourseRequest {
-  content?: CourseContentInput;
-  /** @example "policy_abc123" */
-  course_id: string;
 }
 
 export interface CreateCourseTxRequest {
@@ -528,24 +536,6 @@ export interface CreateCourseTxRequest {
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
   teachers?: string[];
-}
-
-export interface CreateKeyRequest {
-  environment: "mainnet" | "preprod";
-  /**
-   * @minLength 3
-   * @maxLength 64
-   */
-  name: string;
-}
-
-export interface CreateKeyResponse {
-  created_at?: string;
-  environment?: string;
-  id?: string;
-  key?: string;
-  last4?: string;
-  name?: string;
 }
 
 export interface CreateModuleRequest {
@@ -567,7 +557,7 @@ export interface CreateProjectTxRequest {
    */
   alias?: string;
   /**
-   * List of [course_id, [slt_hash, ...]] tuples — each prerequisite course's ID paired with the array of its required SLT hashes. Proxied from Atlas, whose Haskell tuple type has no Swagger 2.0 equivalent; the inner shape is not otherwise expressible here. An empty list means no prerequisites.
+   * List of [course_id, [slt_hash, ...]] tuples — each prerequisite course's ID paired with the array of its required SLT hashes. The tuple type has no Swagger 2.0 equivalent; the inner shape is not otherwise expressible here. An empty list means no prerequisites.
    * Example: [["ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef", ["c8bc55db03d6ead9c8bc55db03d6ead9c8bc55db03d6ead9c8bc55db03d6ead9"]]]
    */
   course_prereqs?: any[][];
@@ -718,6 +708,12 @@ export interface ErrorDetail {
 }
 
 /** Standard error response envelope */
+export interface ErrorEnvelope {
+  /** Error details with code, message, and optional debug info */
+  error: ErrorDetail;
+}
+
+/** Standard error response envelope */
 export interface ErrorResponse {
   /** Error details with code, message, and optional debug info */
   error: ErrorDetail;
@@ -738,7 +734,7 @@ export interface GetContributorCommitmentRequest {
 
 export interface GetStudentAssignmentCommitmentRequest {
   course_id?: string;
-  /** Human-readable code (e.g., "101") - used for DB lookup */
+  /** Human-readable code (e.g., "101") - used for lookup */
   course_module_code?: string;
   /** On-chain hash - required for on-chain lookup */
   slt_hash?: string;
@@ -757,33 +753,19 @@ export interface IntroductionV2Output {
   created_by_alias?: string;
   description?: string;
   image_url?: string;
-  is_live?: boolean;
   title?: string;
   video_url?: string;
 }
 
 export type JSONMap = Record<string, any>;
 
-export interface KeyListItem {
-  created_at?: string;
-  environment?: string;
-  id?: string;
-  last4?: string;
-  name?: string;
-}
-
 export interface LessonV2Output {
   content_json?: JSONMap;
   created_by_alias?: string;
   description?: string;
   image_url?: string;
-  is_live?: boolean;
   title?: string;
   video_url?: string;
-}
-
-export interface ListKeysResponse {
-  keys?: KeyListItem[];
 }
 
 export interface ListManagerTasksRequest {
@@ -986,7 +968,7 @@ export interface MergedAssignmentContent {
 }
 
 export interface MergedAssignmentResponse {
-  /** Off-chain content (from DB API) */
+  /** Off-chain content */
   content?: MergedAssignmentContent;
   /** Course and module context */
   course_id: string;
@@ -1011,7 +993,7 @@ export interface MergedCourseDetail {
   /** On-chain fields (top level) */
   course_id: string;
   modules?: CourseModule[];
-  /** WORKAROUND: fetched via extra API call until Andamioscan#15 is resolved */
+  /** Alias of the course owner */
   owner?: string;
   past_students?: string[];
   /** Data source indicator */
@@ -1043,18 +1025,18 @@ export interface MergedCourseListItem {
 }
 
 export interface MergedCourseModuleItem {
-  /** Off-chain content (from DB API) */
+  /** Off-chain content */
   content?: ModuleContent;
   /** Course context */
   course_id: string;
-  /** On-chain fields (from Andamioscan) */
+  /** On-chain fields */
   created_by?: string;
   /** SLT hashes from chain */
   on_chain_slts?: string[];
   /** On-chain prerequisite module hashes */
   prerequisites?: string[];
   /**
-   * Primary identifier - matches on-chain slts_hash and DB slt_hash.
+   * Primary identifier - matches on-chain slts_hash and off-chain slt_hash.
    * Empty string for db_only drafts without SLTs computed yet.
    */
   slt_hash?: string;
@@ -1178,7 +1160,7 @@ export interface MergedProjectListItem {
   project_id: string;
   /** Data source indicator */
   source: string;
-  /** Aggregated task reward data (computed from Andamioscan detail) */
+  /** Aggregated task reward data (computed from on-chain detail) */
   total_reward_lovelace?: number;
   treasury_address?: string;
 }
@@ -1233,9 +1215,9 @@ export interface MergedTaskListItem {
   source: string;
   /** On-chain fields (top level) */
   task_hash?: string;
-  /** DB task index (for draft identification) */
+  /** Off-chain task index (for draft identification) */
   task_index?: number;
-  /** DB task status (for db_only tasks: DRAFT, PENDING_TX, ON_CHAIN, etc.) */
+  /** Off-chain task status (for db_only tasks: DRAFT, PENDING_TX, ON_CHAIN, etc.) */
   task_status?: string;
 }
 
@@ -1299,7 +1281,7 @@ export interface ModuleContent {
   introduction?: any;
   is_live?: boolean;
   module_status?: string;
-  /** Full SLT content from DB ([]SltV2) */
+  /** Full SLT content ([]SltV2) */
   slts?: any;
   title?: string;
   video_url?: string;
@@ -1314,13 +1296,6 @@ export interface ModuleContentInput {
   sort_order?: number;
   title?: string;
   video_url?: string;
-}
-
-export interface MyCommitmentSummary {
-  /** committed, submitted, approved, rejected */
-  commitment_status: string;
-  content?: TaskCommitmentContent;
-  task_hash: string;
 }
 
 export interface NotFoundErrorResponse {
@@ -1387,7 +1362,7 @@ export interface PendingTxResponse {
   /** Optional metadata stored with the transaction */
   metadata?: Record<string, string>;
   /**
-   * Number of 404 poll cycles (Andamioscan not yet indexed)
+   * Number of 404 poll cycles (transaction not yet indexed)
    * @example 0
    */
   not_indexed_count?: number;
@@ -1440,15 +1415,11 @@ export interface PendingTxResponse {
   user_id?: string;
 }
 
-export interface PostProjectContributorCommitmentDeleteJSONRequestBody {
-  task_hash?: string;
-}
-
 export interface PostProjectContributorCommitmentSubmitJSONRequestBody {
-  evidence?: JSONMap;
-  evidence_hash?: string;
-  pending_tx_hash?: string;
-  task_hash?: string;
+  /** Evidence is required. Andamio computes the evidence hash from it. */
+  evidence: JSONMap;
+  pending_tx_hash: string;
+  task_hash: string;
 }
 
 export interface PostUserAccessTokenAliasJSONRequestBody {
@@ -1466,7 +1437,7 @@ export interface Project {
   project_address?: string;
   /** @example "policy_xyz789" */
   project_id: string;
-  /** @example "chain+db" */
+  /** @example "merged" */
   source: string;
   treasury_address?: string;
 }
@@ -1566,11 +1537,11 @@ export interface ProjectsDashboard {
 }
 
 export interface PublicCourseModuleItem {
-  /** Off-chain content (from DB API) */
+  /** Off-chain content */
   content?: PublicModuleContent;
   /** Course context */
   course_id: string;
-  /** On-chain fields (from Andamioscan) */
+  /** On-chain fields */
   created_by?: string;
   /** SLT text from chain */
   on_chain_slts?: string[];
@@ -1619,7 +1590,6 @@ export interface RegisterCourseV2Request {
   image_url?: string;
   is_public?: boolean;
   title?: string;
-  tx_hash?: string;
   video_url?: string;
 }
 
@@ -1635,14 +1605,14 @@ export interface RegisterModuleResponse {
   meta?: Meta;
 }
 
-/** Request body for registering a transaction with the TX State Machine. After submitting a signed transaction to the Cardano network, register it here so the Gateway can track confirmation and automatically update the database. */
+/** Request body for registering a transaction with the TX State Machine. After submitting a signed transaction to the Cardano network, register it here so the Gateway can track confirmation and automatically update its off-chain record. */
 export interface RegisterPendingTxRequest {
   /**
    * Optional instance ID (course_id or project_id) for scoping
    * @example "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2"
    */
   instance_id?: string;
-  /** Optional metadata for off-chain data needed during DB update (e.g., policy_id, module_code) */
+  /** Optional metadata for off-chain data needed during the off-chain update (e.g., policy_id, module_code) */
   metadata?: Record<string, string>;
   /**
    * Transaction hash (64 hex characters) returned from wallet.submitTx()
@@ -1650,7 +1620,7 @@ export interface RegisterPendingTxRequest {
    */
   tx_hash: string;
   /**
-   * Transaction type - determines which Andamioscan event endpoint to poll and which DB update to perform
+   * Transaction type - determines which on-chain event confirms the transaction and which off-chain update follows
    * @example "assignment_submit"
    */
   tx_type:
@@ -1686,12 +1656,11 @@ export interface ReviewAssignmentCommitmentV2Request {
   /** Decision "accept" or "refuse" */
   decision?: string;
   participant_alias?: string;
-  pending_tx_hash?: string;
 }
 
 export interface ServiceUnavailableErrorResponse {
   details?: string;
-  /** @example "Service Unavailable - One or more critical dependencies (e.g., database, Redis) are not reachable or healthy." */
+  /** @example "Service Unavailable - The service is temporarily unable to handle the request; retry later." */
   message: string;
   /** @example 503 */
   status_code: number;
@@ -1792,7 +1761,7 @@ export interface StudentCourseCredential {
   enrollment_status: string;
   /** Enrollment state (from on-chain) */
   is_enrolled?: boolean;
-  /** Module metadata (from DB, for resolving slt_hash → title/code) */
+  /** Module metadata (off-chain, for resolving slt_hash → title/code) */
   modules?: CredentialModuleInfo[];
   /** Data source indicator */
   source: string;
@@ -1836,11 +1805,10 @@ export interface StudentDashboard {
 }
 
 export interface SubmitAssignmentCommitmentV2Request {
-  course_id?: string;
-  evidence?: JSONMap;
-  evidence_hash?: string;
-  pending_tx_hash?: string;
-  slt_hash?: string;
+  course_id: string;
+  /** Evidence is required. Andamio computes the evidence hash from it. */
+  evidence: JSONMap;
+  slt_hash: string;
 }
 
 export interface SuccessResponse {
@@ -1888,6 +1856,7 @@ export interface TaskCommitment {
   project_id: string;
   /** @example "pending" */
   task_commitment_status?: string;
+  /** Andamio's canonical-v1 hash of the stored evidence, computed by Andamio when the evidence is saved. Callers do not set it. */
   task_evidence_hash?: string;
   task_hash: string;
   updated_at?: string;
@@ -1900,9 +1869,9 @@ export interface TaskCommitmentContent {
   commitment_status?: string;
   /** Tiptap JSON document */
   evidence?: any;
-  /** Hash for on-chain verification */
+  /** Andamio's canonical-v1 hash of the stored evidence, computed by Andamio when the evidence is saved. Callers do not set it. */
   task_evidence_hash?: string;
-  /** accept, refuse, deny (lowercase, matches db-api enum) */
+  /** accept, refuse, deny (lowercase) */
   task_outcome?: string;
 }
 
@@ -1971,7 +1940,7 @@ export interface TeacherAssignmentCommitmentItem {
   content?: AssignmentCommitmentContent;
   /** Identifiers */
   course_id: string;
-  /** Human-readable module code (from DB) */
+  /** Human-readable module code */
   course_module_code?: string;
   /** Hex-encoded on-chain content */
   on_chain_content?: string;
@@ -1998,17 +1967,33 @@ export interface TeacherDashboard {
   total_pending_reviews?: number;
 }
 
+/** List of registered native asset tokens */
+export interface TokenListResponse {
+  data: TokenRegistryEntry[];
+  /** Optional metadata for API responses */
+  meta?: Meta;
+}
+
+export interface TokenRegistryEntry {
+  /** @example "416e64616d696f546f6b656e" */
+  asset_name: string;
+  /** @example "AndamioToken" */
+  asset_name_decoded: string;
+  /** @example 6 */
+  decimals?: number;
+  /** @example "Andamio Token" */
+  name?: string;
+  /** @example "f4c9f9c4252d86702c2f4c2e49e6648873ca2ac01c8b5c76f2d4da5f" */
+  policy_id: string;
+  /** @example "f4c9f9c4252d86702c2f4c2e49e6648873ca2ac01c8b5c76f2d4da5f416e64616d696f546f6b656e" */
+  subject: string;
+  /** @example "ANDA" */
+  ticker?: string;
+}
+
 export interface TokenResponse {
   expires_at: string;
   token: string;
-}
-
-export interface TooManyRequestsErrorResponse {
-  details?: string;
-  /** @example "Too Many Requests: Rate limit or quota exceeded." */
-  message: string;
-  /** @example 429 */
-  status_code: number;
 }
 
 export interface UnauthorizedErrorResponse {
@@ -2048,10 +2033,10 @@ export interface UpdateAccessTokenAliasResponse {
 }
 
 export interface UpdateAssignmentCommitmentV2Request {
-  course_id?: string;
-  course_module_code?: string;
-  evidence?: JSONMap;
-  evidence_hash?: string;
+  course_id: string;
+  course_module_code: string;
+  /** Evidence is required. Andamio computes the evidence hash from it. */
+  evidence: JSONMap;
 }
 
 export interface UpdateCourseRequest {
@@ -2068,14 +2053,13 @@ export interface UpdateModuleStatusRequest {
   course_module_code?: string;
   /** Required when status = "APPROVED" */
   slt_hash?: string;
-  /** "DRAFT", "APPROVED", or "PENDING_TX" */
-  status?: string;
+  status?: "DRAFT" | "APPROVED";
 }
 
 export interface UpdateModuleV2 {
   allowed_student_state_ids?: string[];
   prereq_credential_hashes?: string[];
-  /** Hex-encoded hash of the SLT (exactly 64 characters). */
+  /** Hex-encoded hash of the module's SLT list, which is also its on-chain token name (exactly 64 characters). */
   slt_hash?: string;
 }
 
@@ -2086,14 +2070,6 @@ export interface UpdateProjectRequest {
   is_public?: boolean;
   title?: string;
   video_url?: string;
-}
-
-export interface UpdateTaskCommitmentRequest {
-  evidence?: Record<string, any>;
-  /** @example "ev_hash_456" */
-  evidence_hash?: string;
-  /** @example "hash_abc123" */
-  task_hash: string;
 }
 
 export interface UpdateTaskRequest {

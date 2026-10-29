@@ -84,7 +84,7 @@ export function ContentDisplay({
         node shapes at render time, so malformed objects fail closed rather
         than injecting arbitrary HTML (see #509 for the narrowed contract).
       */}
-      <ContentViewerCompact content={content as JSONContent} />
+      <ContentViewerCompact content={content} />
     </div>
   );
 }
@@ -101,5 +101,5 @@ export function ContentDisplay({
 export function ContentDisplayInline({
   content,
 }: Pick<ContentDisplayProps, "content">) {
-  return <ContentViewerCompact content={content as JSONContent} />;
+  return <ContentViewerCompact content={content} />;
 }

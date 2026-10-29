@@ -52,7 +52,6 @@ import type {
   ContributorCommitmentResponse as ApiContributorCommitmentResponse,
   ContributorProjectListItem,
   ContributorCommitmentItem,
-  MyCommitmentSummary as ApiMyCommitmentSummary,
 } from "~/types/generated/gateway";
 import {
   getProjectStatusFromSource,
@@ -83,18 +82,6 @@ export const projectContributorKeys = {
 // =============================================================================
 
 /**
- * Commitment summary from contributor's perspective
- */
-export interface MyCommitmentSummary {
-  taskHash: string;
-  commitmentStatus: string;
-  taskEvidenceHash?: string;
-  evidence?: unknown;
-  evidenceUrl?: string;
-  notes?: string;
-}
-
-/**
  * Contributor project item with camelCase fields
  * Contains both on-chain and off-chain data
  */
@@ -120,9 +107,6 @@ export interface ContributorProject {
 
   // Prerequisites
   prerequisites?: ProjectPrerequisite[];
-
-  // Contributor-specific: user's own commitments
-  myCommitments?: MyCommitmentSummary[];
 }
 
 /**
@@ -195,20 +179,6 @@ export function normalizeProjectCommitmentStatus(raw: string | undefined): strin
 // =============================================================================
 
 /**
- * Transform ApiMyCommitmentSummary → MyCommitmentSummary
- */
-function transformMyCommitmentSummary(
-  api: ApiMyCommitmentSummary
-): MyCommitmentSummary {
-  return {
-    taskHash: api.task_hash ?? "",
-    commitmentStatus: normalizeProjectCommitmentStatus(api.commitment_status),
-    taskEvidenceHash: api.content?.task_evidence_hash,
-    evidence: api.content?.evidence,
-  };
-}
-
-/**
  * Transform ContributorProjectListItem → ContributorProject
  */
 function transformContributorProject(
@@ -239,9 +209,6 @@ function transformContributorProject(
       courseId: p.course_id ?? "",
       sltHashes: p.slt_hashes,
     })),
-
-    // Contributor-specific
-    myCommitments: api.my_commitments?.map(transformMyCommitmentSummary),
   };
 }
 
@@ -252,11 +219,9 @@ function transformContributorCommitment(
   api: ContributorCommitmentItem
 ): ContributorCommitment {
   // Content may include pending_tx_hash not in the generated type
-  const content = api.content as
-    | (ContributorCommitmentItem["content"] & {
-        pending_tx_hash?: string;
-      })
-    | undefined;
+  const content:
+    | (ContributorCommitmentItem["content"] & { pending_tx_hash?: string })
+    | undefined = api.content;
 
   return {
     // Identifiers
@@ -550,7 +515,7 @@ export function useCreateCommitment() {
       void queryClient.invalidateQueries({
         queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskHash),
       });
-      // Invalidate contributor projects (myCommitments changed)
+      // Invalidate all contributor queries
       void queryClient.invalidateQueries({
         queryKey: projectContributorKeys.all,
       });
@@ -633,163 +598,6 @@ export function useSubmitTaskEvidence() {
         queryKey: [...projectContributorKeys.all, "commitment"],
         predicate: (query) =>
           query.queryKey.includes(variables.taskHash),
-      });
-    },
-  });
-}
-
-/**
- * Update an existing commitment (submit evidence)
- *
- * @example
- * ```tsx
- * function SubmitEvidence({ commitment }: { commitment: ContributorCommitment }) {
- *   const updateCommitment = useUpdateCommitment();
- *
- *   const handleSubmit = async (evidence: EvidenceData) => {
- *     await updateCommitment.mutateAsync({
- *       projectId: commitment.projectId,
- *       taskHash: commitment.taskHash,
- *       data: {
- *         evidenceUrl: evidence.url,
- *         notes: evidence.notes,
- *       },
- *     });
- *     toast.success("Evidence submitted!");
- *   };
- *
- *   return <EvidenceForm onSubmit={handleSubmit} isLoading={updateCommitment.isPending} />;
- * }
- * ```
- */
-export function useUpdateCommitment() {
-  const queryClient = useQueryClient();
-  const { authenticatedFetch } = useAndamioAuth();
-
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      taskHash,
-      data,
-    }: {
-      projectId: string;
-      taskHash: string;
-      data: Partial<{
-        evidence: unknown;
-        evidenceUrl: string;
-        notes: string;
-      }>;
-    }) => {
-      // Endpoint: POST /project/contributor/commitment/update
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/contributor/commitment/update`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            project_id: projectId,
-            task_hash: taskHash,
-            evidence: data.evidence,
-            evidence_url: data.evidenceUrl,
-            notes: data.notes,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to update commitment: ${response.statusText}`);
-      }
-
-      return response.json();
-    },
-    onSuccess: (_, variables) => {
-      // Invalidate specific commitment
-      void queryClient.invalidateQueries({
-        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskHash),
-      });
-      // Invalidate contributor commitments list
-      void queryClient.invalidateQueries({
-        queryKey: projectContributorKeys.commitments(variables.projectId),
-      });
-      // Invalidate contributor projects (myCommitments changed)
-      void queryClient.invalidateQueries({
-        queryKey: projectContributorKeys.all,
-      });
-    },
-  });
-}
-
-/**
- * Delete/abandon a task commitment
- *
- * **Note:** This abandons a single task commitment. It does NOT claim
- * rewards and does NOT un-enroll the contributor from the project.
- *
- * To un-enroll from a project AND claim pending rewards, use the
- * `ProjectCredentialClaim` TX component (`PROJECT_CONTRIBUTOR_CREDENTIAL_CLAIM`).
- *
- * @example
- * ```tsx
- * function DeleteCommitment({ commitment }: { commitment: ContributorCommitment }) {
- *   const deleteCommitment = useDeleteCommitment();
- *
- *   const handleDelete = async () => {
- *     if (confirm("Are you sure you want to abandon this task?")) {
- *       await deleteCommitment.mutateAsync({
- *         projectId: commitment.projectId,
- *         taskHash: commitment.taskHash,
- *       });
- *       toast.success("Commitment deleted");
- *     }
- *   };
- *
- *   return <Button onClick={handleDelete} variant="destructive">Abandon Task</Button>;
- * }
- * ```
- */
-export function useDeleteCommitment() {
-  const queryClient = useQueryClient();
-  const { authenticatedFetch } = useAndamioAuth();
-
-  return useMutation({
-    mutationFn: async ({
-      projectId,
-      taskHash,
-    }: {
-      projectId: string;
-      taskHash: string;
-    }) => {
-      // Endpoint: POST /project/contributor/commitment/delete
-      const response = await authenticatedFetch(
-        `${GATEWAY_API_BASE}/project/contributor/commitment/delete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            project_id: projectId,
-            task_hash: taskHash,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete commitment: ${response.statusText}`);
-      }
-
-      return response.json();
-    },
-    onSuccess: (_, variables) => {
-      // Remove specific commitment from cache
-      queryClient.removeQueries({
-        queryKey: projectContributorKeys.commitment(variables.projectId, variables.taskHash),
-      });
-      // Invalidate contributor commitments list
-      void queryClient.invalidateQueries({
-        queryKey: projectContributorKeys.commitments(variables.projectId),
-      });
-      // Invalidate contributor projects (myCommitments changed)
-      void queryClient.invalidateQueries({
-        queryKey: projectContributorKeys.all,
       });
     },
   });

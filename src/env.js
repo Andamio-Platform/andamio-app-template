@@ -11,6 +11,11 @@ export const env = createEnv({
     // API key for server-side requests to Andamio Gateway
     // This key is used for all proxied requests - usage is billed to the app developer
     ANDAMIO_API_KEY: z.string().min(1),
+    // GitHub integration for in-app feedback/issue reporting
+    // Fine-grained PAT with "Issues: Read and write" on the target repo
+    GITHUB_TOKEN: z.string().optional(),
+    // Target repo for issues, e.g. "your-org/your-repo"
+    GITHUB_REPO: z.string().optional(),
   },
 
   /**
@@ -45,6 +50,8 @@ export const env = createEnv({
     NEXT_PUBLIC_BLOCKFROST_PROJECT_ID: process.env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID,
     NEXT_PUBLIC_WEB3_SDK_PROJECT_ID: process.env.NEXT_PUBLIC_WEB3_SDK_PROJECT_ID,
     NEXT_PUBLIC_WEB3_SDK_NETWORK: process.env.NEXT_PUBLIC_WEB3_SDK_NETWORK,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+    GITHUB_REPO: process.env.GITHUB_REPO,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

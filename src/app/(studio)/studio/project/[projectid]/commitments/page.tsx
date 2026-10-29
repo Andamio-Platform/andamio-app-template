@@ -9,7 +9,6 @@ import { useTransaction } from "~/hooks/tx/use-transaction";
 import { useTxStream } from "~/hooks/tx/use-tx-stream";
 import { TransactionButton } from "~/components/tx/transaction-button";
 import { ContentDisplay } from "~/components/content-display";
-import type { JSONContent } from "@tiptap/core";
 import { formatCommitmentStatus } from "~/lib/format-status";
 import {
   AndamioBadge,
@@ -529,7 +528,7 @@ export default function ProjectCommitmentsPage() {
                   {selectedCommitment.evidence ? (
                     <div className="border rounded-md">
                       <ContentDisplay
-                        content={selectedCommitment.evidence as JSONContent}
+                        content={selectedCommitment.evidence}
                         variant="muted"
                       />
                     </div>

@@ -10,7 +10,7 @@
  * @see ~/types/errors.ts - ParsedError interface
  */
 
-import { type ZodError, type ZodSchema } from "zod";
+import { type ZodError, type ZodType } from "zod";
 import type { ParsedError } from "~/types/errors";
 
 /**
@@ -71,7 +71,7 @@ export function isApiValidationError(error: unknown): error is ApiValidationErro
  */
 export function validateResponse<T>(
   data: unknown,
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   endpoint: string
 ): T {
   const result = schema.safeParse(data);
@@ -107,7 +107,7 @@ export function validateResponse<T>(
  */
 export function validateResponseSoft<T>(
   data: unknown,
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   endpoint: string
 ): T {
   const result = schema.safeParse(data);

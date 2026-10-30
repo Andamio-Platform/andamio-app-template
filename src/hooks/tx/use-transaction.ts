@@ -202,7 +202,7 @@ export function useTransaction() {
         if (!skipValidation) {
           const validation = validateTxParams(txType, params);
           if (!validation.success) {
-            const errorMsg = validation.error.errors
+            const errorMsg = validation.error.issues
               .map((e) => `${e.path.join(".")}: ${e.message}`)
               .join(", ");
             throw new Error(`Invalid parameters: ${errorMsg}`);

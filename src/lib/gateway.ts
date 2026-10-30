@@ -217,7 +217,7 @@ export async function gatewayAuth<T>(path: string, jwt: string): Promise<T> {
 // Validated Gateway Functions (with Zod runtime validation)
 // =============================================================================
 
-import type { ZodSchema } from "zod";
+import type { ZodType } from "zod";
 import { validateResponse, validateResponseSoft } from "./api-validation";
 
 /**
@@ -252,7 +252,7 @@ export interface ValidatedGatewayOptions {
  */
 export async function gatewayValidated<T>(
   path: string,
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   options?: ValidatedGatewayOptions
 ): Promise<T> {
   const data = await gateway<unknown>(path);
@@ -285,7 +285,7 @@ export async function gatewayValidated<T>(
 export async function gatewayAuthValidated<T>(
   path: string,
   jwt: string,
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   options?: ValidatedGatewayOptions
 ): Promise<T> {
   const data = await gatewayAuth<unknown>(path, jwt);
@@ -318,7 +318,7 @@ export async function gatewayAuthValidated<T>(
 export async function gatewayPostValidated<T>(
   path: string,
   body: unknown,
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   options?: ValidatedGatewayOptions
 ): Promise<T> {
   const data = await gatewayPost<unknown>(path, body);
@@ -354,7 +354,7 @@ export async function gatewayAuthPostValidated<T>(
   path: string,
   jwt: string,
   body: unknown,
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   options?: ValidatedGatewayOptions
 ): Promise<T> {
   const data = await gatewayAuthPost<unknown>(path, jwt, body);

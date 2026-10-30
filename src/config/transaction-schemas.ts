@@ -12,7 +12,7 @@
  * // Validate before submission
  * const result = txSchemas.COURSE_STUDENT_ASSIGNMENT_COMMIT.safeParse(formData);
  * if (!result.success) {
- *   console.error(result.error.flatten());
+ *   console.error(z.flattenError(result.error));
  *   return;
  * }
  *
@@ -396,9 +396,8 @@ export type TxParams = {
 export function validateTxParams<T extends TransactionType>(
   txType: T,
   params: unknown
-): z.SafeParseReturnType<unknown, TxParams[T]> {
-  return txSchemas[txType].safeParse(params) as z.SafeParseReturnType<
-    unknown,
+): z.ZodSafeParseResult<TxParams[T]> {
+  return txSchemas[txType].safeParse(params) as z.ZodSafeParseResult<
     TxParams[T]
   >;
 }

@@ -137,7 +137,7 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
 function VideoPreview({ url }: { url: string }) {
   const embedUrl = useMemo(() => {
     if (!url) return null;
-    const ytRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/;
+    const ytRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/;
     const ytMatch = ytRegex.exec(url);
     if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
     const vimeoRegex = /vimeo\.com\/(\d+)/;

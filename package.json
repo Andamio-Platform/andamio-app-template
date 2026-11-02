@@ -116,7 +116,7 @@
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "balanced-match": "^5.0.0",
-    "dotenv": "^17.2.3",
+    "dotenv": "^18.0.9",
     "eslint": "^10.13.0",
     "eslint-config-next": "^16.4.3",
     "openapi-typescript": "^7.10.1",

@@ -115,7 +115,7 @@
     "@types/node": "^26.6.6",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
-    "balanced-match": "^3.0.1",
+    "balanced-match": "^5.0.0",
     "dotenv": "^17.2.3",
     "eslint": "^9.23.0",
     "eslint-config-next": "^16.4.3",

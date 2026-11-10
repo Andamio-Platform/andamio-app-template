@@ -58,7 +58,7 @@ Check that `NEXT_PUBLIC_CARDANO_NETWORK` matches the network your API key is pro
 ### Wallet connects but auth fails
 
 - Make sure your wallet is set to the same network as `NEXT_PUBLIC_CARDANO_NETWORK` (preprod or mainnet)
-- If using preprod, your wallet must be switched to the **Preview** or **Preprod** testnet inside the extension settings
+- If using preprod, your wallet must be switched to the **Preprod** testnet inside the extension settings
 
 ---
 

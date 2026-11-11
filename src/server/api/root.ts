@@ -1,4 +1,3 @@
-import "server-only";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { exampleRouter } from "~/server/api/routers/example";
 

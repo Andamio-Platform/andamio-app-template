@@ -16,6 +16,7 @@
 | 3 | 16:00 | app.andamio.io registration | No "already registered" feedback — generic error shown when wallet already has an account. After multiple attempts the account gets rate-limited with no explanation of how long to wait. | **Blocker** (app.andamio.io) |
 | 4 | ~22:00 | Browse Courses | App crashes with `next/image` error — `cdn.corenexis.com` not in `next.config.js` image allowlist. Course images from external hostnames not covered by the template config cause a full page error. | **Blocker** |
 | 5 | ~22:00 | Browse Courses | All public courses on the preprod network are visible with no indication they belong to other users. A new developer has no guided path — no seed course, no "start here". Without prior knowledge of Andamio there is nothing obvious to do next. | **Friction** |
+| 6 | 30:00 | First credential | Cannot complete the fork-to-first-credential loop using other people's courses — submitting work requires the course teacher to assess it, and there is no way to contact or identify them. Without a seed course you own, the full loop (submit → assess → credential) is impossible to complete independently. | **Blocker** |
 
 ---
 

@@ -15,5 +15,3 @@ export const CodeBlock = CodeBlockLowlight.extend({
     return ReactNodeViewRenderer(CodeBlockView);
   },
 });
-
-export default CodeBlock;

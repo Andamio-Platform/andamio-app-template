@@ -77,5 +77,3 @@ export function CodeBlockView({ node }: NodeViewProps) {
     </NodeViewWrapper>
   );
 }
-
-export default CodeBlockView;

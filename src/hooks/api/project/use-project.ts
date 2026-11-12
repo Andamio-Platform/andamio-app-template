@@ -422,11 +422,6 @@ export function transformOnChainTask(
 }
 
 /**
- * @deprecated Use transformOnChainTask instead
- */
-export const transformApiTask = transformOnChainTask;
-
-/**
  * Derive taskStatus from API source field
  */
 function getTaskStatusFromSource(source: string | undefined): TaskStatusValue {
@@ -637,11 +632,6 @@ export function transformProjectDetail(api: MergedProjectDetail): ProjectDetail 
     states,
   };
 }
-
-/**
- * @deprecated Use transformProjectListItem instead
- */
-export const transformApiProject = transformProjectListItem;
 
 /**
  * @deprecated Use TaskCommitment type directly

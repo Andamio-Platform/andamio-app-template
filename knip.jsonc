@@ -1,0 +1,18 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Plugins find the Next.js entry points. These are the ones no plugin knows about.
+  "entry": [
+    // Unit tests run through `tsx --test`, which has no Knip plugin.
+    "src/**/*.test.{ts,tsx}",
+    // Scripts run by hand or from CI (`tsx scripts/...`).
+    "scripts/*.ts"
+  ],
+  "ignoreIssues": {
+    // Regenerated from the gateway spec by `npm run generate:types`.
+    "src/types/generated/gateway.ts": ["exports", "types"],
+    // shadcn/ui components, kept as the shadcn CLI writes them so updates apply cleanly.
+    "src/components/ui/**": ["exports", "types"]
+  },
+  // Run through `npx` from scripts/generate-types.sh, which Knip does not read.
+  "ignoreDependencies": ["swagger-typescript-api"]
+}

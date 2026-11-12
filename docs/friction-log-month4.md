@@ -15,6 +15,7 @@
 | 2 | 10:00 | API key setup | Getting an API key requires visiting `app.andamio.io/api-setup`, switching wallet to mainnet to pay, then switching back to preprod to develop. Context switching between networks mid-setup is disruptive and not mentioned anywhere in the README or `.env.example`. | **Friction** |
 | 3 | 16:00 | app.andamio.io registration | No "already registered" feedback — generic error shown when wallet already has an account. After multiple attempts the account gets rate-limited with no explanation of how long to wait. | **Blocker** (app.andamio.io) |
 | 4 | ~22:00 | Browse Courses | App crashes with `next/image` error — `cdn.corenexis.com` not in `next.config.js` image allowlist. Course images from external hostnames not covered by the template config cause a full page error. | **Blocker** |
+| 5 | ~22:00 | Browse Courses | All public courses on the preprod network are visible with no indication they belong to other users. A new developer has no guided path — no seed course, no "start here". Without prior knowledge of Andamio there is nothing obvious to do next. | **Friction** |
 
 ---
 

@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | 1 | 3:45 | Wallet auth | "Sign-In Failed" with no actionable error. Root cause: `ANDAMIO_API_KEY` still set to placeholder value. App starts and appears healthy but fails silently at auth. UI shows generic "Something went wrong during sign-in. Please try again." with no mention of API key or `.env`. | **Blocker** |
 | 2 | 10:00 | API key setup | Getting an API key requires visiting `app.andamio.io/api-setup`, switching wallet to mainnet to pay, then switching back to preprod to develop. Context switching between networks mid-setup is disruptive and not mentioned anywhere in the README or `.env.example`. | **Friction** |
-| 3 | ~10:00 | app.andamio.io registration | No "already registered" feedback — generic error shown when wallet already has an account. After multiple attempts the account gets rate-limited with no explanation of how long to wait. | **Blocker** (app.andamio.io) |
+| 3 | 16:00 | app.andamio.io registration | No "already registered" feedback — generic error shown when wallet already has an account. After multiple attempts the account gets rate-limited with no explanation of how long to wait. | **Blocker** (app.andamio.io) |
 
 ---
 

@@ -81,3 +81,9 @@ Tester was completely blocked at the 16-minute mark due to rate limiting on `app
 | Steps not completed | Wallet auth, Access Token mint, first credential |
 
 **Verdict:** A new developer cannot complete fork-to-first-credential without prior knowledge of the Andamio ecosystem. The critical path depends on `app.andamio.io` UX improvements and clearer prerequisite documentation in the template.
+
+---
+
+## Walkthrough resumed — using existing API key
+
+At 16 minutes, tester unblocked by using a pre-existing API key from a previous account. A brand new developer would not have this option and would remain blocked until the rate limit clears. Timer continues.

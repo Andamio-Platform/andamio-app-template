@@ -87,3 +87,5 @@ Tester was completely blocked at the 16-minute mark due to rate limiting on `app
 ## Walkthrough resumed — using existing API key
 
 At 16 minutes, tester unblocked by using a pre-existing API key from a previous account. A brand new developer would not have this option and would remain blocked until the rate limit clears. Timer continues.
+
+**22:00** — Access Token successfully minted. On-chain identity created.

@@ -13,6 +13,7 @@
 |---|---|---|---|---|
 | 1 | 3:45 | Wallet auth | "Sign-In Failed" with no actionable error. Root cause: `ANDAMIO_API_KEY` still set to placeholder value. App starts and appears healthy but fails silently at auth. UI shows generic "Something went wrong during sign-in. Please try again." with no mention of API key or `.env`. | **Blocker** |
 | 2 | 10:00 | API key setup | Getting an API key requires visiting `app.andamio.io/api-setup`, switching wallet to mainnet to pay, then switching back to preprod to develop. Context switching between networks mid-setup is disruptive and not mentioned anywhere in the README or `.env.example`. | **Friction** |
+| 3 | ~10:00 | app.andamio.io registration | No "already registered" feedback — generic error shown when wallet already has an account. After multiple attempts the account gets rate-limited with no explanation of how long to wait. | **Blocker** (app.andamio.io) |
 
 ---
 
@@ -37,6 +38,20 @@ This is a significant context switch that isn't mentioned anywhere in the README
 1. **In the README** — add a "Before you start" prerequisite step explicitly calling out that an API key requires a mainnet wallet and real ADA, before the Quick Start section
 2. **In `.env.example`** — expand the API key comment to mention the network switch required
 3. **Longer term** — explore whether a free preprod API key tier is feasible to remove this friction entirely for new developers
+
+---
+
+### Issue #3 — app.andamio.io registration gives no "already registered" feedback
+When a developer tries to register at `app.andamio.io` with a wallet that already has an account, the app returns a generic error with no explanation. The developer has no way to know they're already registered and should just log in instead. After multiple failed attempts the account gets rate-limited and they are temporarily blocked from trying again.
+
+**Severity:** Blocker (on the app.andamio.io side)
+
+**Proposed fixes:**
+1. **On app.andamio.io** — detect "already registered" and show a clear message: "This wallet already has an account. Try logging in instead."
+2. **On app.andamio.io** — rate limit error should explain what happened and how long to wait
+3. **In the template docs** — note in the README/troubleshooting that if you already have an Andamio account you should log in rather than register
+
+> **Note:** This is an `app.andamio.io` issue, not a template issue, but it is part of the fork-to-deploy experience and should be reported to the relevant team.
 
 ---
 

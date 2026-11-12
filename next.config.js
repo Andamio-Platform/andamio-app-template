@@ -81,6 +81,10 @@ const config = {
         protocol: "https",
         hostname: "i.imgur.com",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.corenexis.com",
+      },
       // -----------------------------------------------------------------------
       // DEVELOPMENT ONLY: Allow localhost image sources for convenience.
       // -----------------------------------------------------------------------

@@ -14,6 +14,7 @@
 | 1 | 3:45 | Wallet auth | "Sign-In Failed" with no actionable error. Root cause: `ANDAMIO_API_KEY` still set to placeholder value. App starts and appears healthy but fails silently at auth. UI shows generic "Something went wrong during sign-in. Please try again." with no mention of API key or `.env`. | **Blocker** |
 | 2 | 10:00 | API key setup | Getting an API key requires visiting `app.andamio.io/api-setup`, switching wallet to mainnet to pay, then switching back to preprod to develop. Context switching between networks mid-setup is disruptive and not mentioned anywhere in the README or `.env.example`. | **Friction** |
 | 3 | 16:00 | app.andamio.io registration | No "already registered" feedback — generic error shown when wallet already has an account. After multiple attempts the account gets rate-limited with no explanation of how long to wait. | **Blocker** (app.andamio.io) |
+| 4 | ~22:00 | Browse Courses | App crashes with `next/image` error — `cdn.corenexis.com` not in `next.config.js` image allowlist. Course images from external hostnames not covered by the template config cause a full page error. | **Blocker** |
 
 ---
 
@@ -89,3 +90,5 @@ Tester was completely blocked at the 16-minute mark due to rate limiting on `app
 At 16 minutes, tester unblocked by using a pre-existing API key from a previous account. A brand new developer would not have this option and would remain blocked until the rate limit clears. Timer continues.
 
 **22:00** — Access Token successfully minted. On-chain identity created.
+
+**~22:00** — Navigated to Browse Courses. App crashed with image error.

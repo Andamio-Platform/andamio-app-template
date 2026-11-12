@@ -55,6 +55,29 @@ When a developer tries to register at `app.andamio.io` with a wallet that alread
 
 ---
 
-## Walkthrough in progress
+### Issue #4 — Walkthrough blocked at 16 minutes
+Tester was completely blocked at the 16-minute mark due to rate limiting on `app.andamio.io`. No path forward without waiting for the rate limit to clear. A new developer with no context would likely abandon at this point.
 
-This log will be updated as the walkthrough continues.
+**Severity:** Blocker
+
+**Root cause chain:**
+1. `.env` placeholder not caught before app starts → auth fails silently
+2. API key setup requires mainnet wallet switch → unexpected friction
+3. Already-registered error gives no guidance → developer retries
+4. Rate limit kicks in → completely blocked with no ETA
+
+**The core problem:** The entire fork-to-deploy experience depends on `app.andamio.io` working smoothly, but there is no documentation warning developers about these steps before they start.
+
+---
+
+## Summary (walkthrough ended at 16 minutes — blocked)
+
+| Metric | Result |
+|---|---|
+| Time to first credential | Did not complete — blocked at 16 min |
+| Blockers | 2 (auth error, rate limit) |
+| Friction points | 1 (network switch for API key) |
+| Steps completed | Fork, clone, env setup, npm install, npm run dev |
+| Steps not completed | Wallet auth, Access Token mint, first credential |
+
+**Verdict:** A new developer cannot complete fork-to-first-credential without prior knowledge of the Andamio ecosystem. The critical path depends on `app.andamio.io` UX improvements and clearer prerequisite documentation in the template.

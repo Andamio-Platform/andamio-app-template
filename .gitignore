@@ -60,5 +60,4 @@ packages/*/package-lock.json
 
 # idea files
 .idea
-.
 specs/

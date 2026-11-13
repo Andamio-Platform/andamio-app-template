@@ -661,5 +661,3 @@ export function useContentEditor(
     clear,
   };
 }
-
-export default ContentEditor;

@@ -142,5 +142,3 @@ export const ImageBlockView = (props: ImageBlockViewProps) => {
     </NodeViewWrapper>
   );
 };
-
-export default ImageBlockView;

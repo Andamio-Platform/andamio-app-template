@@ -335,5 +335,3 @@ export function ContentViewerCompact({
     />
   );
 }
-
-export default ContentViewer;

@@ -47,8 +47,6 @@ export {
   type ProjectState as ProjectStateOutput,
   type TaskStatusValue,
   // Transform functions for use in hooks/libs
-  transformApiTask,
-  transformApiProject,
   transformApiCommitment,
   transformOnChainTask,
   transformProjectDetail,

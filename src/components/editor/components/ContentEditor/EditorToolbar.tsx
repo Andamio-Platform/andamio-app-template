@@ -1105,5 +1105,3 @@ export function EditorToolbar({
     </TooltipProvider>
   );
 }
-
-export default EditorToolbar;

@@ -8,16 +8,16 @@ import {
   AndamioEmptyState,
 } from "~/components/andamio";
 import { CourseIcon, SuccessIcon, PendingIcon, InfoIcon } from "~/components/icons";
-import { useActiveCourses, useStudentCourses } from "~/hooks/api";
+import { useOwnerCourses, useStudentCourses } from "~/hooks/api";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { CourseCard } from "~/components/courses/course-card";
 import { AndamioBadge } from "~/components/andamio/andamio-badge";
 
 /**
- * Public page displaying all active courses
+ * Course page displaying courses owned by the authenticated user
  *
- * Uses the merged V2 API endpoint that returns both on-chain and off-chain data.
- * API Endpoint: GET /api/v2/course/user/courses/list
+ * Uses the owner API endpoint that returns only courses belonging to the signed-in wallet.
+ * API Endpoint: POST /api/v2/course/owner/courses/list
  *
  * Features:
  * - Responsive grid layout (1-3 columns based on screen size)
@@ -31,7 +31,7 @@ export default function CoursePage() {
     data: courses = [],
     isLoading,
     error: coursesError,
-  } = useActiveCourses();
+  } = useOwnerCourses();
 
   const { data: studentCourses } = useStudentCourses();
 
@@ -75,12 +75,12 @@ export default function CoursePage() {
       <div className="space-y-6">
         <AndamioPageHeader
           title="Courses"
-          description="Browse available courses and start building your skills"
+          description="Courses you own and manage"
         />
         <AndamioEmptyState
           icon={CourseIcon}
-          title="No Courses Available Yet"
-          description="Courses are being prepared. In the meantime, explore projects or set up your access token."
+          title="No Courses Yet"
+          description="You haven't created any courses. Use the Studio to create your first course."
         />
       </div>
     );
@@ -92,7 +92,7 @@ export default function CoursePage() {
       {/* Header with stats */}
       <AndamioPageHeader
         title="Courses"
-        description="Browse available courses and start building your skills"
+        description="Courses you own and manage"
       />
 
       {/* Stats bar */}

@@ -196,9 +196,9 @@ function StudioSidebarLayoutInner({
   }
 
   return (
-    <AndamioResizablePanelGroup direction="horizontal" className="h-full">
+    <AndamioResizablePanelGroup orientation="horizontal" className="h-full">
       {/* Left Panel: Courses + Projects List */}
-      <AndamioResizablePanel defaultSize={25} minSize={15} maxSize={35}>
+      <AndamioResizablePanel defaultSize="25%" minSize="15%" maxSize="35%">
         <div className="flex h-full flex-col overflow-hidden">
           {/* Search - Top */}
           <div className="border-b border-border px-3 py-2 bg-muted/30">
@@ -321,7 +321,7 @@ function StudioSidebarLayoutInner({
       <AndamioResizableHandle withHandle />
 
       {/* Right Panel: Page Content */}
-      <AndamioResizablePanel defaultSize={75}>
+      <AndamioResizablePanel defaultSize="75%">
         {children}
       </AndamioResizablePanel>
     </AndamioResizablePanelGroup>

@@ -459,11 +459,11 @@ export default function TeacherDashboardPage() {
   }
 
   return (
-    <AndamioResizablePanelGroup direction="horizontal" className="h-full">
+    <AndamioResizablePanelGroup orientation="horizontal" className="h-full">
       {/* ================================================================= */}
       {/* LEFT PANEL — Browse & Decide                                      */}
       {/* ================================================================= */}
-      <AndamioResizablePanel defaultSize={40} minSize={30} maxSize={55}>
+      <AndamioResizablePanel defaultSize="40%" minSize="30%" maxSize="55%">
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="border-b px-5 py-4">
@@ -862,7 +862,7 @@ export default function TeacherDashboardPage() {
       {/* ================================================================= */}
       {/* RIGHT PANEL — Evidence Detail                                     */}
       {/* ================================================================= */}
-      <AndamioResizablePanel defaultSize={60}>
+      <AndamioResizablePanel defaultSize="60%">
         <AndamioScrollArea className="h-full">
           {selectedCommitment ? (
             <div className="p-6 space-y-6">

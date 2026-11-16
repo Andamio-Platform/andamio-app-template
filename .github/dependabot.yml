@@ -11,6 +11,10 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    # Wait a week after a release before proposing it, so half-published
+    # package sets (one family split across two versions) are not picked up.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -48,6 +52,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "github-actions"

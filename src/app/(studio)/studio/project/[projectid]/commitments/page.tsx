@@ -315,11 +315,11 @@ export default function ProjectCommitmentsPage() {
 
   return (
     <div className="full-bleed h-full">
-      <AndamioResizablePanelGroup direction="horizontal" className="h-full w-full">
+      <AndamioResizablePanelGroup orientation="horizontal" className="h-full w-full">
         {/* ================================================================= */}
         {/* LEFT PANEL — Submission List                                      */}
         {/* ================================================================= */}
-        <AndamioResizablePanel defaultSize={40} minSize={30} maxSize={55}>
+        <AndamioResizablePanel defaultSize="40%" minSize="30%" maxSize="55%">
           <div className="flex h-full flex-col">
             {/* Header */}
             <div className="border-b px-5 py-4">
@@ -451,7 +451,7 @@ export default function ProjectCommitmentsPage() {
         {/* ================================================================= */}
         {/* RIGHT PANEL — Detail + Assessment                                 */}
         {/* ================================================================= */}
-        <AndamioResizablePanel defaultSize={60}>
+        <AndamioResizablePanel defaultSize="60%">
           <AndamioScrollArea className="h-full">
             {selectedCommitment ? (
               <div className="p-6 space-y-6">

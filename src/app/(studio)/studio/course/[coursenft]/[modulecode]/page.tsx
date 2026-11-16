@@ -416,16 +416,18 @@ function ModuleWizardContent({
 
   return (
     <WizardContext.Provider value={contextValue}>
-      <ResizablePanelGroup direction="horizontal" className="h-full">
+      <ResizablePanelGroup orientation="horizontal" className="h-full">
         {/* Left Panel: Step Outline */}
         <ResizablePanel
-          defaultSize={20}
-          minSize={15}
-          maxSize={30}
+          defaultSize="20%"
+          minSize="15%"
+          maxSize="30%"
           collapsible
-          collapsedSize={0}
-          onCollapse={() => setOutlineCollapsed(true)}
-          onExpand={() => setOutlineCollapsed(false)}
+          collapsedSize="0%"
+          onResize={(size, _id, prev) => {
+            const collapsed = size.asPercentage === 0;
+            if (prev && collapsed !== (prev.asPercentage === 0)) setOutlineCollapsed(collapsed);
+          }}
         >
           <StudioOutlinePanel
             steps={outlineSteps}
@@ -439,7 +441,7 @@ function ModuleWizardContent({
         <ResizableHandle withHandle />
 
         {/* Right Panel: Step Content */}
-        <ResizablePanel defaultSize={80}>
+        <ResizablePanel defaultSize="80%">
           <div className="flex flex-col h-full">
             <AndamioScrollArea className="flex-1 min-h-0">
               <div className="px-6 py-4 w-full md:w-11/12 mx-auto">

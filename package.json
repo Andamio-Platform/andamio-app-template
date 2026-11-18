@@ -1,6 +1,11 @@
 {
   "name": "andamio-app-template",
   "version": "2.2.0",
+  "description": "Forkable Cardano dApp starter built on the Andamio Protocol. Course creation, credential issuance, project management, and treasury operations — all on-chain.",
+  "keywords": ["andamio", "cardano", "dapp", "nextjs", "template", "blockchain", "credentials", "web3"],
+  "homepage": "https://andamio.io",
+  "bugs": { "url": "https://github.com/Andamio-Platform/andamio-app-template/issues" },
+  "repository": { "type": "git", "url": "https://github.com/Andamio-Platform/andamio-app-template.git" },
   "private": true,
   "type": "module",
   "scripts": {

@@ -94,9 +94,7 @@ export function AndamioImage({
       alt={alt}
       className={className}
       style={imgStyle}
-      onError={
-        onError as React.ReactEventHandler<HTMLImageElement> | undefined
-      }
+      onError={onError}
     />
   );
 }

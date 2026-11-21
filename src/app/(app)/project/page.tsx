@@ -3,6 +3,7 @@
 import React, { Suspense, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useProjects } from "~/hooks/api";
+import { useOwnerProjects } from "~/hooks/api/project/use-project-owner";
 import { useStudentCompletionsForPrereqs } from "~/hooks/api/course/use-student-completions-for-prereqs";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
 import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
@@ -15,14 +16,18 @@ import { ProjectCard } from "~/components/projects/project-card";
 import { Button } from "~/components/ui/button";
 
 type EligibilityFilter = "all" | "qualified" | "in-progress" | "open";
+type OwnershipFilter = "all" | "mine";
 
 /**
  * Public page displaying all published projects
  *
  * Shows eligibility status for authenticated users based on their
- * completed courses/credentials.
+ * completed courses/credentials. Authenticated users can toggle to
+ * "My Projects" to see only projects they own.
  *
- * API Endpoint: GET /api/v2/project/user/projects/list
+ * API Endpoints:
+ *   All projects:  GET /api/v2/project/user/projects/list
+ *   My projects:   POST /api/v2/project/owner/projects/list
  */
 export default function ProjectCatalogPage() {
   return (
@@ -33,9 +38,18 @@ export default function ProjectCatalogPage() {
 }
 
 function ProjectCatalogContent() {
-  const { data: projects, isLoading, error } = useProjects();
+  const { data: allProjects, isLoading: allLoading, error: allError } = useProjects();
+  const { data: ownedProjects, isLoading: ownedLoading } = useOwnerProjects();
   const { isAuthenticated } = useAndamioAuth();
   const searchParams = useSearchParams();
+
+  // Ownership toggle — "mine" only available when authenticated
+  const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>("all");
+
+  // Active dataset switches based on ownership toggle
+  const projects = ownershipFilter === "mine" ? ownedProjects : allProjects;
+  const isLoading = ownershipFilter === "mine" ? ownedLoading : allLoading;
+  const error = ownershipFilter === "mine" ? null : allError;
 
   // Filter state — initialize from URL search params if present (e.g. ?filter=qualified)
   const initialFilter = searchParams.get("filter") as EligibilityFilter | null;
@@ -102,8 +116,8 @@ function ProjectCatalogContent() {
         if (project.category !== categoryFilter) return false;
       }
 
-      // Eligibility filter (only applies when authenticated)
-      if (isAuthenticated && eligibilityFilter !== "all" && project.projectId) {
+      // Eligibility filter (only applies when authenticated and viewing all projects)
+      if (isAuthenticated && ownershipFilter === "all" && eligibilityFilter !== "all" && project.projectId) {
         const eligibility = eligibilityMap.get(project.projectId);
         if (!eligibility) return false;
 
@@ -122,7 +136,7 @@ function ProjectCatalogContent() {
 
       return true;
     });
-  }, [projects, searchQuery, categoryFilter, eligibilityFilter, isAuthenticated, eligibilityMap]);
+  }, [projects, searchQuery, categoryFilter, eligibilityFilter, ownershipFilter, isAuthenticated, eligibilityMap]);
 
   // Stats
   const qualifiedCount = isAuthenticated
@@ -151,40 +165,50 @@ function ProjectCatalogContent() {
     );
   }
 
-  if (!projects || projects.length === 0) {
-    return (
-      <div className="space-y-6">
-        <AndamioPageHeader
-          title="Projects"
-          description="Browse all published projects"
-        />
-        <AndamioEmptyState
-          icon={ProjectIcon}
-          title="No Published Projects"
-          description="There are currently no published projects available. Check back later."
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <AndamioPageHeader
         title="Projects"
-        description={isAuthenticated
-          ? "Browse projects and see which ones you qualify for based on your completed courses."
-          : "Browse all published projects. Connect your wallet to see eligibility."
+        description={
+          ownershipFilter === "mine"
+            ? "Projects you own and manage."
+            : isAuthenticated
+            ? "Browse projects and see which ones you qualify for based on your completed courses."
+            : "Browse all published projects. Connect your wallet to see eligibility."
         }
       />
 
-      {/* Stats bar */}
-      <div className="flex flex-wrap gap-3">
+      {/* Ownership toggle + stats bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Ownership toggle — only shown when authenticated */}
+        {isAuthenticated && (
+          <>
+            <FilterButton
+              label="All Projects"
+              active={ownershipFilter === "all"}
+              onClick={() => {
+                setOwnershipFilter("all");
+                setEligibilityFilter("all");
+              }}
+            />
+            <FilterButton
+              label="My Projects"
+              active={ownershipFilter === "mine"}
+              onClick={() => {
+                setOwnershipFilter("mine");
+                setEligibilityFilter("all");
+              }}
+            />
+            <div className="w-px bg-border mx-1 self-stretch" />
+          </>
+        )}
+
         <AndamioBadge variant="secondary" className="text-sm px-3 py-1.5">
           <ProjectIcon className="h-4 w-4 mr-1.5" />
-          {projects.length} {projects.length === 1 ? "project" : "projects"}
+          {projects?.length ?? 0} {(projects?.length ?? 0) === 1 ? "project" : "projects"}
         </AndamioBadge>
-        {isAuthenticated && qualifiedCount > 0 && (
+        {isAuthenticated && ownershipFilter === "all" && qualifiedCount > 0 && (
           <AndamioBadge variant="outline" className="text-sm px-3 py-1.5 text-primary border-primary/30">
             <CredentialIcon className="h-4 w-4 mr-1.5" />
             {qualifiedCount} qualified
@@ -192,92 +216,112 @@ function ProjectCatalogContent() {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="space-y-3">
-        {/* Search */}
-        <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <AndamioInput
-            placeholder="Search projects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+      {/* Empty state for owned projects */}
+      {ownershipFilter === "mine" && (!projects || projects.length === 0) && (
+        <AndamioEmptyState
+          icon={ProjectIcon}
+          title="No Projects Yet"
+          description="You haven't created any projects. Use andamio init or the Studio to create your first project."
+        />
+      )}
 
-        {/* Filter buttons */}
-        <div className="flex flex-wrap gap-2">
-          {/* Eligibility filters (only when authenticated) */}
-          {isAuthenticated && (
-            <>
-              <FilterButton
-                label="All"
-                active={eligibilityFilter === "all"}
-                onClick={() => setEligibilityFilter("all")}
-              />
-              <FilterButton
-                label="Qualified"
-                active={eligibilityFilter === "qualified"}
-                onClick={() => setEligibilityFilter("qualified")}
-              />
-              <FilterButton
-                label="In Progress"
-                active={eligibilityFilter === "in-progress"}
-                onClick={() => setEligibilityFilter("in-progress")}
-              />
-              <FilterButton
-                label="Open to All"
-                active={eligibilityFilter === "open"}
-                onClick={() => setEligibilityFilter("open")}
-              />
-            </>
-          )}
+      {/* Empty state for all projects */}
+      {ownershipFilter === "all" && (!projects || projects.length === 0) && (
+        <AndamioEmptyState
+          icon={ProjectIcon}
+          title="No Published Projects"
+          description="There are currently no published projects available. Check back later."
+        />
+      )}
 
-          {/* Category filter */}
-          {categories.length > 0 && (
-            <>
-              {isAuthenticated && <div className="w-px bg-border mx-1" />}
-              <FilterButton
-                label="All Categories"
-                active={categoryFilter === "all"}
-                onClick={() => setCategoryFilter("all")}
-              />
-              {categories.map((cat) => (
-                <FilterButton
-                  key={cat}
-                  label={cat}
-                  active={categoryFilter === cat}
-                  onClick={() => setCategoryFilter(cat)}
-                />
-              ))}
-            </>
-          )}
-        </div>
-
-        {/* Active filter count + clear */}
-        {hasActiveFilters && (
-          <div className="flex items-center gap-2">
-            <AndamioText variant="small" className="text-muted-foreground">
-              Showing {filteredProjects.length} of {projects.length} projects
-            </AndamioText>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                setSearchQuery("");
-                setEligibilityFilter("all");
-                setCategoryFilter("all");
-              }}
-            >
-              Clear filters
-            </Button>
+      {/* Filters — only shown when there are projects to filter */}
+      {projects && projects.length > 0 && (
+        <div className="space-y-3">
+          {/* Search */}
+          <div className="relative">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <AndamioInput
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
           </div>
-        )}
-      </div>
+
+          {/* Filter buttons */}
+          <div className="flex flex-wrap gap-2">
+            {/* Eligibility filters (only when authenticated and viewing all projects) */}
+            {isAuthenticated && ownershipFilter === "all" && (
+              <>
+                <FilterButton
+                  label="All"
+                  active={eligibilityFilter === "all"}
+                  onClick={() => setEligibilityFilter("all")}
+                />
+                <FilterButton
+                  label="Qualified"
+                  active={eligibilityFilter === "qualified"}
+                  onClick={() => setEligibilityFilter("qualified")}
+                />
+                <FilterButton
+                  label="In Progress"
+                  active={eligibilityFilter === "in-progress"}
+                  onClick={() => setEligibilityFilter("in-progress")}
+                />
+                <FilterButton
+                  label="Open to All"
+                  active={eligibilityFilter === "open"}
+                  onClick={() => setEligibilityFilter("open")}
+                />
+              </>
+            )}
+
+            {/* Category filter */}
+            {categories.length > 0 && (
+              <>
+                {isAuthenticated && ownershipFilter === "all" && <div className="w-px bg-border mx-1" />}
+                <FilterButton
+                  label="All Categories"
+                  active={categoryFilter === "all"}
+                  onClick={() => setCategoryFilter("all")}
+                />
+                {categories.map((cat) => (
+                  <FilterButton
+                    key={cat}
+                    label={cat}
+                    active={categoryFilter === cat}
+                    onClick={() => setCategoryFilter(cat)}
+                  />
+                ))}
+              </>
+            )}
+          </div>
+
+          {/* Active filter count + clear */}
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2">
+              <AndamioText variant="small" className="text-muted-foreground">
+                Showing {filteredProjects.length} of {projects.length} projects
+              </AndamioText>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setSearchQuery("");
+                  setEligibilityFilter("all");
+                  setCategoryFilter("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Project cards grid */}
-      {filteredProjects.length > 0 ? (
+      {filteredProjects.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.map((project) => (
             <ProjectCard
@@ -288,7 +332,10 @@ function ProjectCatalogContent() {
             />
           ))}
         </div>
-      ) : (
+      )}
+
+      {/* No results after filtering */}
+      {projects && projects.length > 0 && filteredProjects.length === 0 && (
         <AndamioEmptyState
           icon={ProjectIcon}
           title="No Matching Projects"

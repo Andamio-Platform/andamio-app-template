@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   OnChainIcon,
   SuccessIcon,
@@ -72,12 +71,11 @@ export function CourseCard({ course, enrollmentStatus }: CourseCardProps) {
         {/* Image header — taller, with title overlaid */}
         <div className="relative h-40 sm:h-48 overflow-hidden rounded-t-xl -mt-6 -mx-0">
           {showImage ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={imageUrl}
               alt={displayTitle}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               onError={() => setImageError(true)}
             />
           ) : (

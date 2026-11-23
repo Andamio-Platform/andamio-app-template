@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { AndamioImage } from "~/components/andamio/andamio-image";
 import {
   OnChainIcon,
   SuccessIcon,
@@ -72,7 +72,7 @@ export function CourseCard({ course, enrollmentStatus }: CourseCardProps) {
         {/* Image header — taller, with title overlaid */}
         <div className="relative h-40 sm:h-48 overflow-hidden rounded-t-xl -mt-6 -mx-0">
           {showImage ? (
-            <Image
+            <AndamioImage
               src={imageUrl}
               alt={displayTitle}
               fill

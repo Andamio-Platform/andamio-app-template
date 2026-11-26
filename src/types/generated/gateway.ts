@@ -25,15 +25,15 @@ export interface AddFundsTxRequest {
    */
   alias?: string;
   /**
-   * List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.).
+   * List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.). An empty list is allowed.
    * Example: [["lovelace", 5000000]]
    */
-  deposit_value?: any[][];
+  deposit_value: any[][];
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  project_id?: string;
+  project_id: string;
 }
 
 export interface AggregateAssignmentInput {
@@ -129,13 +129,14 @@ export interface AssessAssignmentsTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
-  assignment_decisions?: AssignmentOutcome[];
+  alias: string;
+  /** An empty list is allowed. */
+  assignment_decisions: AssignmentOutcome[];
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  course_id?: string;
+  course_id: string;
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
 }
@@ -156,14 +157,14 @@ export interface AssignmentActionTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /** A text string with a maximum length of 140 characters. */
-  assignment_info?: string;
+  assignment_info: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  course_id?: string;
+  course_id: string;
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
 }
@@ -265,12 +266,12 @@ export interface ClaimCourseCredentialsTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  course_id?: string;
+  course_id: string;
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
 }
@@ -282,17 +283,17 @@ export interface ClaimProjectCredentialsTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  contributor_state_id?: string;
+  contributor_state_id: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  project_id?: string;
+  project_id: string;
 }
 
 export interface ClaimV2AccessTokenTxRequest {
@@ -300,7 +301,7 @@ export interface ClaimV2AccessTokenTxRequest {
    * Plain text alias. Any characters allowed.
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
 }
 
 export interface CommitAssignmentTxRequest {
@@ -310,19 +311,19 @@ export interface CommitAssignmentTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /** A text string with a maximum length of 140 characters. */
-  assignment_info?: string;
+  assignment_info: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  course_id?: string;
+  course_id: string;
   /**
    * Hex-encoded hash of the module's SLT list, which is also its on-chain token name (exactly 64 characters).
    * @example "a1b2c3d4e5f6..."
    */
-  slt_hash?: string;
+  slt_hash: string;
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
 }
@@ -334,24 +335,24 @@ export interface CommitTaskTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  contributor_state_id?: string;
+  contributor_state_id: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  project_id?: string;
+  project_id: string;
   /**
    * Hex-encoded identifier of the task as offered: its content, deadline, reward and native assets (exactly 64 characters).
    * @example "a1b2c3d4e5f6..."
    */
-  task_hash?: string;
+  task_hash: string;
   /** A text string with a maximum length of 140 characters. */
-  task_info?: string;
+  task_info: string;
 }
 
 /** Request to complete verification with a CIP-30 wallet signature. */
@@ -532,7 +533,7 @@ export interface CreateCourseTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
   teachers?: string[];
@@ -555,12 +556,13 @@ export interface CreateProjectTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
-   * List of [course_id, [slt_hash, ...]] tuples — each prerequisite course's ID paired with the array of its required SLT hashes. The tuple type has no Swagger 2.0 equivalent; the inner shape is not otherwise expressible here. An empty list means no prerequisites.
+   * List of [course_id, [slt_hash, ...]] tuples — each prerequisite course's ID paired with the array of its required SLT hashes. The tuple type has no Swagger 2.0 equivalent; the inner shape is not otherwise expressible here. An empty list is allowed and means no prerequisites.
    * Example: [["ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef", ["c8bc55db03d6ead9c8bc55db03d6ead9c8bc55db03d6ead9c8bc55db03d6ead9"]]]
    */
-  course_prereqs?: any[][];
+  course_prereqs: any[][];
+  /** Ignored: at creation the owner is the project's only manager. Add more with POST /v2/tx/project/owner/managers/manage. */
   managers?: string[];
 }
 
@@ -808,14 +810,16 @@ export interface ManageContributorBlacklistTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
-  aliases_to_add?: string[];
-  aliases_to_remove?: string[];
+  alias: string;
+  /** An empty list is allowed. */
+  aliases_to_add: string[];
+  /** An empty list is allowed. */
+  aliases_to_remove: string[];
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  project_id?: string;
+  project_id: string;
 }
 
 export interface ManageManagersTxRequest {
@@ -825,14 +829,16 @@ export interface ManageManagersTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
-  managers_to_add?: string[];
-  managers_to_remove?: string[];
+  alias: string;
+  /** An empty list is allowed. */
+  managers_to_add: string[];
+  /** An empty list is allowed. */
+  managers_to_remove: string[];
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  project_id?: string;
+  project_id: string;
 }
 
 export interface ManageModulesTxRequest {
@@ -842,15 +848,18 @@ export interface ManageModulesTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  course_id?: string;
-  modules_to_add?: MintModuleV2[];
-  modules_to_remove?: string[];
-  modules_to_update?: UpdateModuleV2[];
+  course_id: string;
+  /** An empty list is allowed. */
+  modules_to_add: MintModuleV2[];
+  /** An empty list is allowed. */
+  modules_to_remove: string[];
+  /** An empty list is allowed. */
+  modules_to_update: UpdateModuleV2[];
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
 }
@@ -862,24 +871,26 @@ export interface ManageTasksTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  contributor_state_id?: string;
+  contributor_state_id: string;
   /**
-   * List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.).
+   * List of (asset class, quantity) pairs. An asset class is either "lovelace" or a token with its minting policy and token name delimited by dot (.). An empty list is allowed.
    * Example: [["lovelace", 5000000]]
    */
-  deposit_value?: any[][];
+  deposit_value: any[][];
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  project_id?: string;
-  tasks_to_add?: TaskData[];
-  tasks_to_remove?: TaskData[];
+  project_id: string;
+  /** An empty list is allowed. */
+  tasks_to_add: TaskData[];
+  /** An empty list is allowed. */
+  tasks_to_remove: TaskData[];
 }
 
 export interface ManageTeachersTxRequest {
@@ -889,16 +900,18 @@ export interface ManageTeachersTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  course_id?: string;
+  course_id: string;
   /** Sponsored path (Path A) — API caller needs to handle sponsorship tank. */
   sponsor_data?: SponsorData;
-  teachers_to_add?: string[];
-  teachers_to_remove?: string[];
+  /** An empty list is allowed. */
+  teachers_to_add: string[];
+  /** An empty list is allowed. */
+  teachers_to_remove: string[];
 }
 
 export interface ManagerCommitmentItem {
@@ -1131,9 +1144,9 @@ export interface MergedProjectDetail {
   submissions?: ProjectSubmissionOnChain[];
   tasks?: ProjectTaskOnChain[];
   treasury_address?: string;
-  /** Aggregated native asset balances across all fundings */
+  /** Native assets at the treasury address on chain. Omitted with treasury_balance. */
   treasury_assets?: Asset[];
-  /** Spendable lovelace (total fundings minus 5 ADA reserve) */
+  /** Lovelace in the project treasury, including the 5 ADA reserve. Spendable lovelace is this value minus 5 ADA. Omitted when the balance is not available; a meta.warning then says so, unless the project has no on-chain treasury yet. */
   treasury_balance?: number;
   treasury_fundings?: ProjectTreasuryFundingOnChain[];
 }
@@ -1241,10 +1254,10 @@ export interface MintAccessTokenTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
-  /** Self-funded path: Bech32 address of the access token recipient. Enterprise Path B also uses this as the receiver address. */
+  alias: string;
+  /** Self-funded path: Bech32 address of the access token recipient. Send exactly one of initiator_data or sponsor_data. */
   initiator_data?: string;
-  /** Sponsored path (Path A): provide this OR initiator_data, not both. */
+  /** Sponsored path (Path A). Send exactly one of sponsor_data or initiator_data. */
   sponsor_data?: MintSponsorData;
 }
 
@@ -1839,12 +1852,12 @@ export interface TaskActionTxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  project_id?: string;
+  project_id: string;
   /** A text string with a maximum length of 140 characters. */
   project_info?: string;
 }
@@ -1921,18 +1934,19 @@ export interface TasksAssessV2TxRequest {
    * @maxLength 31
    * @example "JohnDoe"
    */
-  alias?: string;
+  alias: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  contributor_state_id?: string;
+  contributor_state_id: string;
   /**
    * Hash of a minting policy script.
    * @example "ff80aaaf03a273b8f5c558168dc0e2377eea810badbae6eceefc14ef"
    */
-  project_id?: string;
-  task_decisions?: ProjectOutcome[];
+  project_id: string;
+  /** An empty list is allowed. */
+  task_decisions: ProjectOutcome[];
 }
 
 export interface TeacherAssignmentCommitmentItem {

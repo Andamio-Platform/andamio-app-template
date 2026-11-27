@@ -7,6 +7,29 @@
 
 Forkable Cardano dApp starter built on the Andamio Protocol. Course creation, credential issuance, project management, and treasury operations — all on-chain.
 
+## What is Andamio?
+
+[Andamio](https://andamio.io) is an open protocol on the Cardano blockchain for building learning and collaboration networks. It lets organizations issue on-chain credentials, manage contributor projects, and run treasury operations — without a centralized backend.
+
+The core loop:
+
+```
+Complete courses → Earn credentials → Join projects → Get paid
+```
+
+Everything in that loop is verifiable on-chain. Credentials are NFTs. Project contributions are recorded in smart contracts. Treasury distributions are governed by on-chain logic.
+
+This template gives you a working front-end connected to the Andamio Protocol APIs. Fork it, customize the branding, and you have your own deployment of the protocol.
+
+**New to Cardano?** A few terms you'll encounter:
+
+| Term | What it means |
+|------|---------------|
+| Access Token | An NFT that acts as your on-chain identity in Andamio |
+| Policy ID | The on-chain contract address that governs token minting |
+| preprod | Cardano's test network — safe to experiment with, no real funds needed |
+| Stake address | A Cardano wallet identifier used for authentication |
+
 **Built for AI-assisted development.** This repo includes [Agent Skills](https://agentskills.io) that work with Claude Code, Cursor, Copilot, Gemini CLI, and [30+ other coding agents](https://agentskills.io/home). Fork it, open your favorite AI coding tool, and run `/getting-started` to customize your theme in 2 minutes.
 
 ## Quick Start

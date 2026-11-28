@@ -6,7 +6,8 @@ import {
   AndamioPageLoading,
   AndamioEmptyState,
 } from "~/components/andamio";
-import { CourseIcon, SuccessIcon } from "~/components/icons";
+import { AndamioAlert, AndamioAlertDescription, AndamioAlertTitle } from "~/components/andamio/andamio-alert";
+import { CourseIcon, SuccessIcon, AlertIcon } from "~/components/icons";
 import { useActiveCourses, useStudentCourses } from "~/hooks/api";
 import { useOwnerCourses } from "~/hooks/api/course/use-course-owner";
 import { useAndamioAuth } from "~/hooks/auth/use-andamio-auth";
@@ -29,12 +30,13 @@ export default function CoursePage() {
   const { isAuthenticated } = useAndamioAuth();
   const [tab, setTab] = useState<OwnershipTab>("all");
 
-  const { data: allCourses = [], isLoading: allLoading } = useActiveCourses();
-  const { data: ownedCourses = [], isLoading: ownedLoading } = useOwnerCourses();
+  const { data: allCourses = [], isLoading: allLoading, error: allError } = useActiveCourses();
+  const { data: ownedCourses = [], isLoading: ownedLoading, error: ownedError } = useOwnerCourses();
   const { data: studentCourses } = useStudentCourses();
 
   const courses = tab === "mine" ? ownedCourses : allCourses;
   const isLoading = tab === "mine" ? ownedLoading : allLoading;
+  const error = tab === "mine" ? ownedError : allError;
 
   // Build enrollment map for authenticated users
   const enrollmentMap = useMemo(() => {
@@ -50,6 +52,19 @@ export default function CoursePage() {
 
   if (isLoading) {
     return <AndamioPageLoading variant="cards" />;
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <AndamioPageHeader title="Courses" description="Browse available courses and start building your skills." />
+        <AndamioAlert variant="destructive">
+          <AlertIcon className="h-4 w-4" />
+          <AndamioAlertTitle>Error</AndamioAlertTitle>
+          <AndamioAlertDescription>{error.message}</AndamioAlertDescription>
+        </AndamioAlert>
+      </div>
+    );
   }
 
   return (

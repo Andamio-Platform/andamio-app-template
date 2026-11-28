@@ -38,7 +38,7 @@ export default function ProjectCatalogPage() {
 
 function ProjectCatalogContent() {
   const { data: allProjects, isLoading: allLoading, error: allError } = useProjects();
-  const { data: ownedProjects, isLoading: ownedLoading } = useOwnerProjects();
+  const { data: ownedProjects, isLoading: ownedLoading, error: ownedError } = useOwnerProjects();
   const { isAuthenticated } = useAndamioAuth();
   const searchParams = useSearchParams();
 
@@ -46,7 +46,7 @@ function ProjectCatalogContent() {
 
   const projects = tab === "mine" ? ownedProjects : allProjects;
   const isLoading = tab === "mine" ? ownedLoading : allLoading;
-  const error = tab === "all" ? allError : null;
+  const error = tab === "mine" ? ownedError : allError;
 
   // Filter state — initialize from URL search params (e.g. ?filter=qualified)
   const initialFilter = searchParams.get("filter") as EligibilityFilter | null;
